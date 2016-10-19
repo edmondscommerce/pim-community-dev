@@ -43,6 +43,11 @@
             <directory suffix="Test.php">../src/Pim/Bundle/*Bundle/Tests/Functional</directory>
         </testsuite>
 
+        <testsuite name="PIM_Integration_Test">
+            <directory suffix="Integration.php">../src/Pim/Bundle/*/tests/integration</directory>
+            <directory suffix="Integration.php">../src/Pim/Component/*/tests/integration</directory>
+        </testsuite>
+
     </testsuites>
 
     <filter>
