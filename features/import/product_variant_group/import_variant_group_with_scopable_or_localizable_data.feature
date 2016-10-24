@@ -40,7 +40,7 @@ Feature: Execute an import with scopable or localizable data
     Given the following attributes:
       | code             | label-en_US      | label-fr_FR      | type   | localizable | scopable | group   | metric_family | default_metric_unit |
       | sole_length      | Sole length      | Longueur semelle | metric | yes         | no       | general | Length        | CENTIMETER          |
-      | packaging_weight | Packaging weight | Poids packaging        | metric | no          | yes      | general | Weight        | KILOGRAM            |
+      | packaging_weight | Packaging weight | Poids packaging  | metric | no          | yes      | general | Weight        | KILOGRAM            |
     And the following CSV file to import:
       """
       code;type;label-en_US;axis;description-en_US-tablet;sole_length-en_US;packaging_weight-tablet
