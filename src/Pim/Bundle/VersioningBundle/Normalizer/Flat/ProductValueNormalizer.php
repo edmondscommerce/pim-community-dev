@@ -65,7 +65,7 @@ class ProductValueNormalizer implements NormalizerInterface
                         'flat',
                         $context
                     );
-                } elseif (is_array($productValue['data'][0]) && isset($productValue['data'][0]['currency'])) {
+                } elseif (isset($productValue['data'][0]['currency'])) {
                     $flatProductValue += (array) $this->priceNormalizer->normalize(
                         $standardProductValue,
                         'flat',

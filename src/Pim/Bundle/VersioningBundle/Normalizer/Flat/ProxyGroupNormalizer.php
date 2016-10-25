@@ -9,7 +9,7 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
  * Group normalizer proxy that calls the GroupNormalizer or VariantGroupNormalizer depending on the group to normalize
  * and the value returned by GroupInterface::isVariantGroup function.
  *
- * The problem is the symfony serializer internally uses a cache to keep track of the normalizers that supports the
+ * The problem is the symfony serializer internally uses a cache to keep track of the normalizers that support the
  * class of the objects to normalize.
  *
  * Given this context, if the supportsNormalization function calls the GroupInterface::isVariant function to dynamically

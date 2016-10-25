@@ -43,8 +43,7 @@ class MetricNormalizer implements NormalizerInterface
                 $attributeLabel = $this->normalizeAttributeLabel(
                     $attributeCode,
                     $channelCode,
-                    $localeCode,
-                    $isUnitLabel = false
+                    $localeCode
                 );
 
                 if (self::MULTIPLE_FIELDS_FORMAT === $context['metric_format']) {
@@ -52,7 +51,7 @@ class MetricNormalizer implements NormalizerInterface
                         $attributeCode,
                         $channelCode,
                         $localeCode,
-                        $isUnitLabel = true
+                        true
                     );
 
                     $flatMetric[$attributeLabel] = $metricValue['data']['amount'];
@@ -69,8 +68,8 @@ class MetricNormalizer implements NormalizerInterface
                     throw new \InvalidArgumentException(
                         sprintf(
                             'Value "%s" of "metric_format" context value is not allowed ' .
-                            '(allowed values: "single_field, multiple_fields"',
-                            $context['metric_format']
+                            '(allowed values: "%s, %s"',
+                            $context['metric_format'], self::SINGLE_FIELD_FORMAT, self::MULTIPLE_FIELDS_FORMAT
                         )
                     );
                 }
@@ -120,16 +119,15 @@ class MetricNormalizer implements NormalizerInterface
      * @param string $attributeCode
      * @param string $channelCode
      * @param string $localeCode
-     * @param boolean $isUnitLabel
+     * @param bool   $isUnitLabel
      *
      * @return string
      */
-    protected function normalizeAttributeLabel($attributeCode, $channelCode, $localeCode, $isUnitLabel)
+    protected function normalizeAttributeLabel($attributeCode, $channelCode, $localeCode, $isUnitLabel = false)
     {
         $channelLabel = null !== $channelCode ? self::LABEL_SEPARATOR . $channelCode : '';
         $localeLabel = null !== $localeCode ? self::LABEL_SEPARATOR . $localeCode : '';
-        $unitLabel = true === $isUnitLabel ?
-            self::LABEL_SEPARATOR . self::UNIT_LABEL : '';
+        $unitLabel = true === $isUnitLabel ? self::LABEL_SEPARATOR . self::UNIT_LABEL : '';
 
         return $attributeCode . $unitLabel . $localeLabel . $channelLabel;
     }

@@ -82,7 +82,7 @@ class ProductNormalizer implements NormalizerInterface
      *
      * @return array
      */
-    protected function normalizeAssociations($associations = [])
+    protected function normalizeAssociations(array $associations = [])
     {
         $flatAssociations = [];
 
@@ -95,7 +95,7 @@ class ProductNormalizer implements NormalizerInterface
     }
 
     /**
-     * Normalize values from the prodct to serialize into flat format
+     * Normalize values from the product to serialize into flat format
      *
      * @param array  $productValues
      * @param string $format
@@ -103,7 +103,7 @@ class ProductNormalizer implements NormalizerInterface
      *
      * @return array
      */
-    protected function normalizeValues($productValues, $format = null, array $context = [])
+    protected function normalizeValues(array $productValues, $format = null, array $context = [])
     {
         $normalizedValues = [];
         foreach ($productValues as $attribute => $productValue) {

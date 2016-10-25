@@ -53,11 +53,7 @@ class PriceNormalizer implements NormalizerInterface
      */
     public function supportsNormalization($data, $format = null)
     {
-        return isset($data['data']) &&
-        is_array($data['data']) &&
-        isset($data['data'][0]) &&
-        isset($data['data'][0]['currency']) &&
-        in_array($format, $this->supportedFormats);
+        return isset($data['data'][0]['currency']) && in_array($format, $this->supportedFormats);
     }
 
     /**
