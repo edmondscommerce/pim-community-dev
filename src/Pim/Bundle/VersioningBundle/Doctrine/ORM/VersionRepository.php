@@ -53,7 +53,26 @@ class VersionRepository extends EntityRepository implements VersionRepositoryInt
      */
     public function getNewestLogEntryForRessources($resourceNames)
     {
-        return $this->findOneBy(['resourceName' => $resourceNames], ['loggedAt' => 'desc'], 1);
+                $values = $this->findBy(['resourceName' => $resourceNames]);
+        $first  = true;
+        $found  = null;
+        foreach ($values as $value) {
+            /** @var $value Version */
+            if (is_null($found)) {
+
+                $found = $value->getLoggedAt();
+                continue;
+            }
+            $first = ($found > $value->getLoggedAt());
+            break;
+        }
+        if ($first == true) {
+            $return = array_shift($values);
+        } else {
+            $return = array_pop($values);
+        }
+
+        return $return;
     }
 
     /**
