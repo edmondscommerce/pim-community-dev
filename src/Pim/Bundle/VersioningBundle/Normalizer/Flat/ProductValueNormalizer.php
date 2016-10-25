@@ -13,6 +13,7 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
  */
 class ProductValueNormalizer implements NormalizerInterface
 {
+    const ITEM_SEPARATOR = ',';
     const LABEL_SEPARATOR = '-';
 
     /** @var string[] */
@@ -24,22 +25,16 @@ class ProductValueNormalizer implements NormalizerInterface
     /** @var NormalizerInterface */
     protected $metricNormalizer;
 
-    /** @var NormalizerInterface */
-    protected $collectionNormalizer;
-
     /**
      * @param NormalizerInterface $priceNormalizer
      * @param NormalizerInterface $metricNormalizer
-     * @param NormalizerInterface $collectionNormalizer
      */
     public function __construct(
         NormalizerInterface $priceNormalizer,
-        NormalizerInterface $metricNormalizer,
-        NormalizerInterface $collectionNormalizer
+        NormalizerInterface $metricNormalizer
     ) {
         $this->priceNormalizer = $priceNormalizer;
         $this->metricNormalizer = $metricNormalizer;
-        $this->collectionNormalizer = $collectionNormalizer;
     }
 
     /**
@@ -72,11 +67,13 @@ class ProductValueNormalizer implements NormalizerInterface
                         $context
                     );
                 } elseif (is_array($productValue['data'])) {
-                    $flatProductValue += $this->collectionNormalizer->normalize(
-                        $standardProductValue,
-                        'flat',
-                        $context
+                    $attributeLabel = $this->normalizeAttributeLabel(
+                        $attributeCode,
+                        $productValue['scope'],
+                        $productValue['locale']
                     );
+
+                    $flatProductValue[$attributeLabel] = implode(self::ITEM_SEPARATOR, $productValue['data']);
                 } else {
                     $attributeLabel = $this->normalizeAttributeLabel(
                         $attributeCode,

@@ -50,7 +50,6 @@ services:
         arguments:
             - '@pim_versioning.serializer.normalizer.flat.price'
             - '@pim_versioning.serializer.normalizer.flat.metric'
-            - '@pim_versioning.serializer.normalizer.flat.collection'
 
     pim_versioning.serializer.normalizer.flat.collection:
         class: '%pim_serializer.normalizer.flat.collection.class%'
