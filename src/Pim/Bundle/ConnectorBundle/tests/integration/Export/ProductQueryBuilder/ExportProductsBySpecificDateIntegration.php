@@ -52,8 +52,8 @@ CSV;
         $this->updateProduct('product_3', ['family' => 'familyA1']);
 
         $expectedCsv = <<<CSV
-sku;categories;enabled;family;groups;a_date;a_file;a_localizable_image-en_US
-product_3;;1;familyA1;;;;
+sku;categories;enabled;family;groups;a_date;a_file;a_localizable_image-en_US;a_metric;a_metric-unit;a_number_float
+product_3;;1;familyA1;;;;;;;
 
 CSV;
 
