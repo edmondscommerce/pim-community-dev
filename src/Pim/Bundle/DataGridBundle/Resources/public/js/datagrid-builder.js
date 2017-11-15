@@ -109,6 +109,11 @@ define([
                 this.grid = grid;
                 this.$el.append(grid.render().$el);
 
+                // Temporary, move elsewhere
+                if (options.gridModifier) {
+                    $('.AknGrid', grid.$el).addClass(options.gridModifier);
+                }
+
                 // create grid view
                 options = methods.combineGridViewsOptions.call(this);
                 $(gridGridViewsSelector).append((new GridViewsView(_.extend({collection: collection}, options))).render().$el);
@@ -187,7 +192,8 @@ define([
                     toolbarOptions: metadata.options.toolbarOptions || {},
                     multipleSorting: metadata.options.multipleSorting || false,
                     entityHint: metadata.options.entityHint,
-                    row: metadata.options.rowView ? requireContext(metadata.options.rowView) : null
+                    row: metadata.options.rowView ? requireContext(metadata.options.rowView) : null,
+                    gridModifier: metadata.options.gridModifier
                 };
             },
 

@@ -86,6 +86,7 @@ config:
         oro/datagrid/pagination:                pimdatagrid/js/datagrid/pagination
         oro/datagrid/row:                       pimdatagrid/js/datagrid/row
         oro/datagrid/history-row:               pimdatagrid/js/datagrid/history-row
+        oro/datagrid/product-row:               pimdatagrid/js/datagrid/product-row
         oro/datagrid-builder:                   pimdatagrid/js/datagrid-builder
         oro/loading-mask:                       pimdatagrid/js/loading-mask
         oro/pageable-collection:                pimdatagrid/js/pageable-collection
@@ -158,6 +159,7 @@ config:
         pim/template/datagrid/filter/scope-filter:       pimdatagrid/templates/filter/scope-filter.html
         pim/template/datagrid/row/version:               pimdatagrid/templates/datagrid/row/version.html
         pim/template/datagrid/row/changes:               pimdatagrid/templates/datagrid/row/changes.html
+        pim/template/datagrid/row/product:               pimdatagrid/templates/datagrid/row/product.html
         pim/template/datagrid/cell/image-cell:           pimdatagrid/templates/datagrid/cell/image-cell.html
 
         pim/template/datagrid/cell/product-and-product-model-image-cell: pimdatagrid/templates/datagrid/cell/product-and-product-model-image-cell.html
