@@ -85,6 +85,9 @@ define(
                     );
                 }
 
+                // This is triggered by a user action
+                resp.metadata = this.applyDisplayType(resp.metadata, 'thumbnail');
+
                 $(`#grid-${gridName}`).data({
                     metadata: resp.metadata,
                     data: JSON.parse(resp.data)
@@ -93,22 +96,39 @@ define(
                 const url = decodeURI(resp.metadata.options.url).split('?')[0];
                 const localeParam = $.param({ dataLocale });
                 resp.metadata.options.url =  `${url}?${localeParam}`;
-                resp.metadata.options.rowView = this.setRowView();
-                resp.metadata.options.gridModifier = 'AknGrid--thumbnailView';
-
-                console.log(resp.metadata);
 
                 datagridBuilder([StateListener]);
 
                 this.loadingMask.hide();
             },
 
+            /**
+             * Gets the allowed display types from the datagrid config and applies them
+             * The allowed options are:
+             * rowTemplate: The module to display a row
+             * enabledColumns: The columns to display for this view
+             * gridModifier: A CSS class modifier for the grid table
+             * displayHeader: An option to hide or show the column header
+             *
+             * @param  {Object} gridMetadata
+             * @param  {Object} selectedType
+             * @return {Object}
+             */
+            applyDisplayType(gridMetadata, selectedType) {
+                const metadata = _.clone(gridMetadata);
+                const displayTypes = metadata.options.displayTypes;
+                const displayType = displayTypes[selectedType];
+                if (!displayType) return metadata;
 
-            setRowView() {
-                // const rowType = sessionStorage.getItem('row-type') || 'oro/datagrid/row';
-                const rowType = 'oro/datagrid/product-row';
+                metadata.columns = metadata.columns.filter(column => {
+                    return displayType.enabledColumns.includes(column.name);
+                });
 
-                return rowType;
+                metadata.options.rowView = displayType.rowTemplate;
+                metadata.options.gridModifier = displayType.gridModifier;
+                metadata.options.displayHeader = displayType.displayHeader;
+
+                return metadata;
             },
 
             /**

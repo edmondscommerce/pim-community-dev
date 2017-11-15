@@ -48,6 +48,7 @@ define(
          * @extends BaseForm
          */
         var ConfigureColumnsAction = BaseForm.extend({
+            enabled: false,
 
             locale: null,
 
@@ -71,7 +72,7 @@ define(
             initialize: function () {
                 mediator.once('grid_load:start', this.setupOptions.bind(this));
 
-                 BaseForm.prototype.initialize.apply(this, arguments);
+                BaseForm.prototype.initialize.apply(this, arguments);
             },
 
             /**
@@ -90,6 +91,10 @@ define(
                     this.icon = options.icon;
                 }
 
+                if (false === options.displayHeader) {
+                    this.enabled = options.displayHeader;
+                }
+
                 this.gridName = gridContainer.name;
 
                 const filters = PageableCollection.prototype.decodeStateData(collection.url.split('?')[1]);
@@ -104,6 +109,8 @@ define(
              * Render the configure columns button
              */
             renderAction: function() {
+                if (false === this.enabled) return;
+
                 this.$el.empty().append(
                         this.template({
                             icon: this.icon,

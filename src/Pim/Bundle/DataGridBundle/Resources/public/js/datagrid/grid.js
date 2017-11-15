@@ -46,6 +46,8 @@ define(
          * @extends Backgrid.Grid
          */
         return Backgrid.Grid.extend({
+            gridModifier: '',
+
             /** @property {String} */
             name: 'datagrid',
 
@@ -74,6 +76,8 @@ define(
 
             /** @property {oro.datagrid.Header} */
             header: GridHeader,
+
+            displayHeader: true,
 
             /** @property {oro.datagrid.Body} */
             body: GridBody,
@@ -339,11 +343,19 @@ define(
             renderGrid: function () {
                 var $el = this.$(this.selectors.grid);
 
-                $el.append(this.header.render().$el);
+                if (this.displayHeader) {
+                    $el.append(this.header.render().$el);
+                }
+
                 if (this.footer) {
                     $el.append(this.footer.render().$el);
                 }
+
                 $el.append(this.body.render().$el);
+
+                if (this.gridModifier) {
+                    $el.addClass(this.gridModifier);
+                }
             },
 
             /**
