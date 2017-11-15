@@ -93,15 +93,18 @@ define(
                 const url = decodeURI(resp.metadata.options.url).split('?')[0];
                 const localeParam = $.param({ dataLocale });
                 resp.metadata.options.url =  `${url}?${localeParam}`;
-                resp.metadata.options.rowView = this.getRowView();
-                resp.metadata.options.gridModifier = 'AknGrid--thumbnailView'
+                resp.metadata.options.rowView = this.setRowView();
+                resp.metadata.options.gridModifier = 'AknGrid--thumbnailView';
+
+                console.log(resp.metadata);
 
                 datagridBuilder([StateListener]);
 
                 this.loadingMask.hide();
             },
 
-            getRowView() {
+
+            setRowView() {
                 // const rowType = sessionStorage.getItem('row-type') || 'oro/datagrid/row';
                 const rowType = 'oro/datagrid/product-row';
 

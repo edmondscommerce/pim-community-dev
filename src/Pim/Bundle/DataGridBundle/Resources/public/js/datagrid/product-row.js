@@ -33,17 +33,22 @@ define(
         template: _.template(template),
 
         render() {
+            console.trace();
+
             this.$el.empty();
             const row = $(this.template({}));
 
             this.$el.append(row);
 
-            console.log(this);
-
             for (let i = 0; i < this.cells.length; i++) {
                 const cell = this.cells[i];
-                this.$('.AknGrid-bodyRow').append(cell.render().el);
-                if (!cell.column.get('renderable')) cell.$el.hide();
+                // console.log(cell.column)
+                const display = cell.column.get('display_thumbnail');
+                const renderable = cell.column.get('renderable');
+
+                if (display && renderable) {
+                    this.$('.AknGrid-bodyRow').append(cell.render().el);
+                }
             }
 
             this.delegateEvents();
