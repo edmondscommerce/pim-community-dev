@@ -18,7 +18,7 @@ define([
         config: {},
         template: _.template(template),
         events: {
-            'click li': 'selectDisplayType'
+            'click li': 'setDisplayType'
         },
 
         /**
@@ -44,10 +44,10 @@ define([
             const type = this.$(event.target).data('type');
 
             if ('default' === type)  {
-                return console.log('reset state');
+                return this.getRoot().trigger('grid:display-selector:reset');
             }
 
-            return console.log('apply state', type);
+            return this.getRoot().trigger('grid:display-selector:change', type);
         },
 
         renderDisplayTypes(types) {
