@@ -85,8 +85,7 @@ define(
                     );
                 }
 
-                // This is triggered by a user action
-                resp.metadata = this.applyDisplayType(resp.metadata, 'thumbnail');
+                // resp.metadata = this.applyDisplayType(resp.metadata, 'thumbnail');
 
                 $(`#grid-${gridName}`).data({
                     metadata: resp.metadata,
@@ -114,22 +113,22 @@ define(
              * @param  {Object} selectedType
              * @return {Object}
              */
-            applyDisplayType(gridMetadata, selectedType) {
-                const metadata = _.clone(gridMetadata);
-                const displayTypes = metadata.options.displayTypes;
-                const displayType = displayTypes[selectedType];
-                if (!displayType) return metadata;
+            // applyDisplayType(gridMetadata, selectedType) {
+            //     const metadata = _.clone(gridMetadata);
+            //     const displayTypes = metadata.options.displayTypes;
+            //     const displayType = displayTypes[selectedType];
+            //     if (!displayType) return metadata;
 
-                metadata.columns = metadata.columns.filter(column => {
-                    return displayType.enabledColumns.includes(column.name);
-                });
+            //     metadata.columns = metadata.columns.filter(column => {
+            //         return displayType.enabledColumns.includes(column.name);
+            //     });
 
-                metadata.options.rowView = displayType.rowTemplate;
-                metadata.options.gridModifier = displayType.gridModifier;
-                metadata.options.displayHeader = displayType.displayHeader;
+            //     metadata.options.rowView = displayType.rowTemplate;
+            //     metadata.options.gridModifier = displayType.gridModifier;
+            //     metadata.options.displayHeader = displayType.displayHeader;
 
-                return metadata;
-            },
+            //     return metadata;
+            // },
 
             /**
              * Get the initial grid params with locale

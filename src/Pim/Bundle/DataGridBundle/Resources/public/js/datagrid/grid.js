@@ -77,8 +77,6 @@ define(
             /** @property {oro.datagrid.Header} */
             header: GridHeader,
 
-            displayHeader: true,
-
             /** @property {oro.datagrid.Body} */
             body: GridBody,
 
@@ -343,9 +341,7 @@ define(
             renderGrid: function () {
                 var $el = this.$(this.selectors.grid);
 
-                if (this.displayHeader) {
-                    $el.append(this.header.render().$el);
-                }
+                $el.append(this.header.render().$el);
 
                 if (this.footer) {
                     $el.append(this.footer.render().$el);

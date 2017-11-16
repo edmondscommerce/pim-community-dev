@@ -32,6 +32,7 @@ config:
     paths:
         oro/datagrid/tab-redirect-action:       pimdatagrid/js/datagrid/action/tab-redirect-action
         pim/datagrid/configure-columns-action:  pimdatagrid/js/datagrid/action/configure-columns-action
+        pim/datagrid/display-selector:          pimdatagrid/js/datagrid/display-selector
         oro/export-widget:                      pimdatagrid/js/datagrid/widget/export-widget
         pim/datagrid/state:                     pimdatagrid/js/datagrid/state
         pim/datagrid/state-listener:            pimdatagrid/js/datagrid/state-listener
@@ -148,6 +149,7 @@ config:
         pim/template/datagrid/done-button:               pimdatagrid/templates/datagrid/done-button.html
         pim/template/datagrid/pagination:                pimdatagrid/templates/datagrid/pagination.html
         pim/template/datagrid/configure-columns-action:  pimdatagrid/templates/configure-columns-action.html
+        pim/template/datagrid/display-selector:          pimdatagrid/templates/datagrid/display-selector.html
         pim/template/datagrid/filter/text-filter:        pimdatagrid/templates/filter/text-filter.html
         pim/template/datagrid/filter/price-filter:       pimdatagrid/templates/filter/price-filter.html
         pim/template/datagrid/filter/date-filter:        pimdatagrid/templates/filter/date-filter.html

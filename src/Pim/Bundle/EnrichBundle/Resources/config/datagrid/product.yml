@@ -3,12 +3,13 @@ datagrid:
         options:
             entityHint: product
             filtersAsColumn: true
-            displayTypes:
+            displaySelectorOptions:
                 thumbnail:
+                    label: Grid
                     displayHeader: false
-                    enabledColumns: [ identifier, image, label, completeness, complete_variant_products]
                     rowTemplate: oro/datagrid/product-row
                     gridModifier: AknGrid--thumbnailView
+                    enabledColumns: [ identifier, image, label, completeness, complete_variant_products]
         source:
             acl_resource:      pim_enrich_product_index
             type:              pim_datasource_product
