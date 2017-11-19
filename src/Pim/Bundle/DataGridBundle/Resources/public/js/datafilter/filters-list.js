@@ -47,7 +47,6 @@ define(['underscore', 'pim/form', 'oro/mediator', 'oro/tools'],
                     this.render();
 
                     mediator.trigger('datagrid_filters:loaded', options);
-                    mediator.trigger('datagrid_filters:rendered', this.collection, this.filters);
                 });
             },
 

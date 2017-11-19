@@ -126,9 +126,7 @@ define(
              * @return {Object}
              */
             applyDisplayType(gridMetadata) {
-                console.log('applyDisplayType', gridMetadata);
                 const selectedType = this.displayType;
-                console.log('selectedType', selectedType);
                 const metadata = _.clone(gridMetadata);
                 const displayTypes = metadata.options.displayTypes;
                 const displayType = displayTypes[selectedType];

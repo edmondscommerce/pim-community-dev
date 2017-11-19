@@ -11,7 +11,7 @@ define([
     Backbone,
     __,
     BaseForm,
-    template
+    template,
 ) {
     return BaseForm.extend({
         className: 'AknGridToolbar-right AknDisplaySelector',

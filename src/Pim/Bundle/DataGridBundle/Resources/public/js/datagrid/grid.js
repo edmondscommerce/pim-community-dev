@@ -113,7 +113,6 @@ define(
              * @throws {TypeError} If mandatory options are undefined
              */
             initialize: function (options) {
-                console.log('initialize grid', options);
                 options = options || {};
 
                 // Check required options
