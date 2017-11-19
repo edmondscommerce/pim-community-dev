@@ -68,7 +68,7 @@ define(
              * @inheritdoc
              */
             initialize: function () {
-                mediator.on('grid_load:start', this.setupOptions.bind(this));
+                mediator.once('grid_load:start', this.setupOptions.bind(this));
 
                 BaseForm.prototype.initialize.apply(this, arguments);
             },

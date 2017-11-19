@@ -50,8 +50,8 @@ define(
                 SelectFilter.prototype.initialize.apply(this, arguments);
                 this.catalogScope = UserContext.get('catalogScope');
 
-                mediator.on('datagrid_filters:rendered', this.resetValue.bind(this));
-                mediator.on('datagrid_filters:rendered', this.moveFilter.bind(this));
+                mediator.once('datagrid_filters:rendered', this.resetValue.bind(this));
+                mediator.once('datagrid_filters:rendered', this.moveFilter.bind(this));
 
                 mediator.bind('grid_load:complete', function(collection) {
                     $('#grid-' + collection.inputName).find('div.toolbar').show();
@@ -64,7 +64,9 @@ define(
              * @param {Array} collection
              */
             moveFilter: function (collection) {
-                this.$el.prependTo($('[data-drop-zone="column-context-switcher"]'));
+                const parentContainer = $('[data-drop-zone="column-context-switcher"]');
+                $('[data-type="product_scope"]', parentContainer).remove();
+                this.$el.prependTo(parentContainer);
 
                 let $grid = $('#grid-' + collection.inputName);
 
