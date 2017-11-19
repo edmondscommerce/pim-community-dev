@@ -15,7 +15,7 @@ define(
              * @inheritdoc
              */
             initialize() {
-                mediator.once('datagrid_filters:loaded', this.showFilterManager.bind(this));
+                mediator.on('datagrid_filters:loaded', this.showFilterManager.bind(this));
 
                 BaseForm.prototype.initialize.apply(this, arguments);
             },
@@ -27,7 +27,7 @@ define(
              */
             showFilterManager(options) {
                 const filtersList = new FiltersManager(options);
-                this.$el.append(filtersList.render().$el);
+                this.$el.empty().append(filtersList.render().$el);
 
                 mediator.trigger('datagrid_filters:build.post', filtersList);
             }

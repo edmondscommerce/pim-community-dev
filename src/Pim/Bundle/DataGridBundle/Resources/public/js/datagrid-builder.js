@@ -118,6 +118,7 @@ define([
              * After build
              */
             afterBuild: function () {
+                console.log('afterBuild datagrid_collection_set_after');
                 mediator.trigger('datagrid_collection_set_after', this.grid.collection, this.$el);
             },
 
