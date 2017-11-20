@@ -152,23 +152,6 @@ define(
             },
 
             /**
-             * Set the columns on the datagrid state
-             * @param  {Array} columns   An array of columns
-             * @param  {Object} urlParams Url params
-             * @return {Object}
-             */
-            applyColumns(columns, urlParams) {
-                urlParams = _.clone(urlParams);
-                const { gridName } = this.config;
-                if (_.isArray(columns)) columns = columns.join();
-
-                urlParams[`${gridName}[_parameters][view][columns]`] = columns;
-                DatagridState.set(gridName, { columns: columns });
-
-                return urlParams;
-            },
-
-            /**
              * Set the selected view on the datagrid state
              * @param  {String} viewId    The id of the view
              * @param  {Object} urlParams Url params
@@ -228,6 +211,31 @@ define(
             },
 
             /**
+             * Set the columns on the datagrid state
+             * @param  {Array} columns   An array of columns
+             * @param  {Object} urlParams Url params
+             * @return {Object}
+             */
+            applyColumns(urlParams, columns, defaultColumns) {
+                urlParams = _.clone(urlParams);
+                const { gridName } = this.config;
+                const displayType = this.getStoredDisplayType();
+
+                if ('default' !== displayType) {
+                    columns = defaultColumns;
+                }
+
+                if (_.isArray(columns)) {
+                    columns = columns.join();
+                }
+
+                urlParams[`${gridName}[_parameters][view][columns]`] = columns;
+                DatagridState.set(gridName, { columns: columns });
+
+                return urlParams;
+            },
+
+            /**
              * Apply filters columns and view for the datagrid
              * @param {Array} defaultColumns
              * @param {String} defaultView
@@ -241,16 +249,18 @@ define(
                 }
 
                 const state = DatagridState.get(gridName, ['view', 'filters', 'columns']);
+                const hasDefaultView = defaultView && ('0' === state.view || null === state.view);
+                const columns = hasDefaultView ? defaultView.columns : state.columns;
 
-                if (defaultView && ('0' === state.view || null === state.view)) {
+                if (hasDefaultView) {
                     params = this.applyView(defaultView.id, params);
                     params = this.applyFilters(defaultView.filters, params);
-                    params = this.applyColumns(defaultView.columns, params);
                 } else {
                     if (state.view) params = this.applyView(state.view, params);
                     if (state.filters) params = this.applyFilters(state.filters, params);
-                    params = this.applyColumns(state.columns || defaultColumns, params);
                 }
+
+                params = this.applyColumns(params, columns, defaultColumns);
 
                 this.getRoot().trigger('datagrid:getParams', params);
 
