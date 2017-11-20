@@ -25,7 +25,7 @@ define(
             },
 
             subscribe: function () {
-                mediator.on('datagrid_collection_set_after', this.afterCollectionSet, this);
+                mediator.once('datagrid_collection_set_after', this.afterCollectionSet, this);
                 mediator.on('grid_load:complete', this.saveGridState, this);
 
                 this.$gridContainer.on('preExecute:reset:' + this.gridName, this.onGridReset.bind(this));
@@ -38,7 +38,7 @@ define(
             },
 
             afterCollectionSet: function () {
-                mediator.on(
+                mediator.once(
                     'datagrid_filters:rendered',
                     function (collection) {
                         collection.trigger('updateState', collection);

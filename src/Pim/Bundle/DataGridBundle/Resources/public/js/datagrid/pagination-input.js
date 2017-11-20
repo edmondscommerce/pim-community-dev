@@ -51,7 +51,7 @@ define(
                 mediator.on('datagrid_collection_set_after', this.setupPagination.bind(this));
             }
 
-            mediator.on('grid_load:start', this.setupPagination.bind(this));
+            mediator.once('grid_load:start', this.setupPagination.bind(this));
             mediator.on('grid_load:complete', this.setupPagination.bind(this));
         },
 

@@ -22,7 +22,7 @@ define(['underscore', 'pim/form', 'oro/mediator', 'oro/tools'],
              */
             initialize(options) {
                 this.options = options.config;
-                mediator.on('datagrid_collection_set_after', this.loadFilterModules.bind(this));
+                mediator.once('datagrid_collection_set_after', this.loadFilterModules.bind(this));
                 BaseForm.prototype.initialize.apply(this, arguments);
             },
 

@@ -15,7 +15,7 @@ define(
              * @inheritdoc
              */
             initialize() {
-                mediator.on('datagrid_filters:loaded', this.showFilterManager.bind(this));
+                mediator.once('datagrid_filters:loaded', this.showFilterManager.bind(this));
 
                 BaseForm.prototype.initialize.apply(this, arguments);
             },

@@ -45,7 +45,7 @@ define(
             configure() {
                 this.listenTo(this.getRoot(), 'grid:display-selector:change', type => {
                     this.displayType = type;
-                    this.render();
+                    // this.render();
                 });
 
                 return BaseForm.prototype.configure.apply(this, arguments);
