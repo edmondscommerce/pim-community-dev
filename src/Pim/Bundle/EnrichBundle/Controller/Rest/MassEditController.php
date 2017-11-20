@@ -6,7 +6,10 @@ use Oro\Bundle\DataGridBundle\Extension\MassAction\MassActionParametersParser;
 use Pim\Bundle\DataGridBundle\Adapter\GridFilterAdapterInterface;
 use Pim\Bundle\EnrichBundle\MassEditAction\Operation\MassEditOperation;
 use Pim\Bundle\EnrichBundle\MassEditAction\OperationJobLauncher;
+use Pim\Component\Catalog\Query\ProductQueryBuilderFactoryInterface;
+use Pim\Component\Catalog\Repository\ProductModelRepositoryInterface;
 use Pim\Component\Enrich\Converter\ConverterInterface;
+use Pim\Component\Enrich\Query\SelectedForMassEditInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -31,22 +34,31 @@ class MassEditController
     /** @var ConverterInterface */
     protected $operationConverter;
 
+    /** @var SelectedForMassEditInterface */
+    private $selectedForMassEdit;
+
     /**
-     * @param MassActionParametersParser  $parameterParser
-     * @param GridFilterAdapterInterface  $filterAdapter
-     * @param OperationJobLauncher        $operationJobLauncher
-     * @param ConverterInterface          $operationConverter
+     * @param MassActionParametersParser          $parameterParser
+     * @param GridFilterAdapterInterface          $filterAdapter
+     * @param OperationJobLauncher                $operationJobLauncher
+     * @param ConverterInterface                  $operationConverter
+     * @param ProductModelRepositoryInterface     $productModelRepository
+     * @param ProductQueryBuilderFactoryInterface $productAndProductModelQueryBuilderFactory
+     * @param ProductQueryBuilderFactoryInterface $productQueryBuilderFactory
+     * @param SelectedForMassEditInterface        $selectedForMassEdit
      */
     public function __construct(
         MassActionParametersParser $parameterParser,
         GridFilterAdapterInterface $filterAdapter,
         OperationJobLauncher $operationJobLauncher,
-        ConverterInterface $operationConverter
+        ConverterInterface $operationConverter,
+        SelectedForMassEditInterface $selectedForMassEdit
     ) {
         $this->parameterParser      = $parameterParser;
         $this->filterAdapter        = $filterAdapter;
         $this->operationJobLauncher = $operationJobLauncher;
         $this->operationConverter   = $operationConverter;
+        $this->selectedForMassEdit = $selectedForMassEdit;
     }
 
     /**
@@ -58,6 +70,7 @@ class MassEditController
     {
         $parameters = $this->parameterParser->parse($request);
         $filters = $this->filterAdapter->adapt($parameters);
+        $filters['products_count'] = $this->selectedForMassEdit->findImpactedProducts($filters);
 
         return new JsonResponse($filters);
     }
