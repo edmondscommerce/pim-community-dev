@@ -6,7 +6,6 @@ use Akeneo\Component\StorageUtils\Exception\InvalidObjectException;
 use Akeneo\Component\StorageUtils\Exception\InvalidPropertyException;
 use Akeneo\Component\StorageUtils\Exception\InvalidPropertyTypeException;
 use Akeneo\Component\StorageUtils\Repository\IdentifiableObjectRepositoryInterface;
-use Doctrine\Common\Collections\Collection;
 use Pim\Component\Catalog\Builder\ProductBuilderInterface;
 use Pim\Component\Catalog\Model\AssociationInterface;
 use Pim\Component\Catalog\Model\EntityWithValuesInterface;
@@ -99,11 +98,11 @@ class AssociationFieldSetter extends AbstractFieldSetter
             return;
         }
 
-        $associations = $product->getAssociations() instanceof Collection ?
-            $product->getAssociations()->toArray() : $product->getAssociations();
-
-        foreach ($associations as $association) {
-            if (isset($data[$association->getAssociationType()->getCode()])) {
+        $product->getAssociations()
+            ->filter(function (AssociationInterface $association) use ($data) {
+                return isset($data[$association->getAssociationType()->getCode()]);
+            })
+            ->forAll(function ($key, AssociationInterface $association) use ($data) {
                 $currentData = $data[$association->getAssociationType()->getCode()];
                 if (isset($currentData['products'])) {
                     foreach ($association->getProducts() as $productToRemove) {
@@ -115,8 +114,9 @@ class AssociationFieldSetter extends AbstractFieldSetter
                         $association->removeGroup($groupToRemove);
                     }
                 }
-            }
-        }
+
+                return true;
+            });
     }
 
     /**
