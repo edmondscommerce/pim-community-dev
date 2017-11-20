@@ -42,13 +42,8 @@ define(
                 return BaseForm.prototype.initialize.apply(this, arguments);
             },
 
-            configure() {
-                this.listenTo(this.getRoot(), 'grid:display-selector:change', type => {
-                    this.displayType = type;
-                    // this.render();
-                });
-
-                return BaseForm.prototype.configure.apply(this, arguments);
+            getStoredDisplayType() {
+                return localStorage.getItem(`display-selector:${this.config.gridName}`);
             },
 
             /**
@@ -95,9 +90,7 @@ define(
                     );
                 }
 
-                if (null !== this.displayType) {
-                    resp.metadata = this.applyDisplayType(resp.metadata);
-                }
+                resp.metadata = this.applyDisplayType(resp.metadata);
 
                 $(`#grid-${gridName}`).data({
                     metadata: resp.metadata,
@@ -126,7 +119,10 @@ define(
              * @return {Object}
              */
             applyDisplayType(gridMetadata) {
-                const selectedType = this.displayType;
+                const selectedType = this.getStoredDisplayType();
+
+                if (selectedType === 'default') return gridMetadata;
+
                 const metadata = _.clone(gridMetadata);
                 const displayTypes = metadata.options.displayTypes;
                 const displayType = displayTypes[selectedType];
