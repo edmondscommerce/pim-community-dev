@@ -12,11 +12,11 @@ use Pim\Component\Catalog\Query\Filter\Operators;
  * @copyright 2017 Akeneo SAS (http://www.akeneo.com)
  * @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-class SubtreeFilterIntegration extends AbstractProductAndProductModelQueryBuilderTestCase
+class AncestorFilterIntegration extends AbstractProductAndProductModelQueryBuilderTestCase
 {
     public function testOperatorInListForRootProductModel()
     {
-        $result = $this->executeFilter([['subtree.id', Operators::IN_LIST, ['product_model_48']]]);
+        $result = $this->executeFilter([['ancestor.id', Operators::IN_LIST, ['product_model_48']]]);
         $this->assert(
             $result,
             [
@@ -39,7 +39,7 @@ class SubtreeFilterIntegration extends AbstractProductAndProductModelQueryBuilde
 
     public function testOperatorInListForSubProductModel()
     {
-        $result = $this->executeFilter([['subtree.id', Operators::IN_LIST, ['product_model_76']]]);
+        $result = $this->executeFilter([['ancestor.id', Operators::IN_LIST, ['product_model_76']]]);
         $this->assert(
             $result,
             [
@@ -54,7 +54,7 @@ class SubtreeFilterIntegration extends AbstractProductAndProductModelQueryBuilde
     public function testOperatorInListForMultipleProductModels()
     {
         $result = $this->executeFilter(
-            [['subtree.id', Operators::IN_LIST, ['product_model_76', 'product_model_46']]]
+            [['ancestor.id', Operators::IN_LIST, ['product_model_76', 'product_model_46']]]
         );
         $this->assert(
             $result,

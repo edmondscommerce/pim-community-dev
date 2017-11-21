@@ -13,14 +13,16 @@ use Pim\Component\Catalog\Repository\ProductModelRepositoryInterface;
 use Pim\Component\Catalog\Repository\ProductRepositoryInterface;
 
 /**
+ * An ancestor is either a parent or a grand parent.
+ *
  * @author    Samir Boulil <samir.boulil@akeneo.com>
  * @copyright 2017 Akeneo SAS (http://www.akeneo.com)
  * @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-class SubtreeFilter extends AbstractFieldFilter
+class AncestorFilter extends AbstractFieldFilter
 {
     private const ANCESTOR_ID_ES_FIELD = 'ancestors.ids';
-    private const SUBTREE_FIELD = 'subtree.id';
+    private const PQB_FIELD = 'ancestor.id';
 
     /** @var IdentifiableObjectRepositoryInterface */
     private $productModelRepository;
@@ -56,7 +58,7 @@ class SubtreeFilter extends AbstractFieldFilter
      */
     public function supportsField($field): bool
     {
-        return $field === self::SUBTREE_FIELD;
+        return $field === self::PQB_FIELD;
     }
 
     /**
@@ -69,7 +71,7 @@ class SubtreeFilter extends AbstractFieldFilter
         }
 
         if (!$this->supportsOperator($operator)) {
-            throw InvalidOperatorException::notSupported($operator, SubtreeFilter::class);
+            throw InvalidOperatorException::notSupported($operator, AncestorFilter::class);
         }
 
         $this->checkValues($values);

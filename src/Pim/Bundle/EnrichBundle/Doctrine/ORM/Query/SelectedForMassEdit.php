@@ -145,7 +145,6 @@ class SelectedForMassEdit implements SelectedForMassEditInterface
     }
 
     /**
-     * @param array $attributeAndFieldFilters
      * @param array $ids
      *
      * @return int
@@ -155,7 +154,7 @@ class SelectedForMassEdit implements SelectedForMassEditInterface
         $pqb = $this->productAndProductModelQueryBuilderFactory->create();
         $pqb->addFilter('entity_type', Operators::EQUALS, ProductInterface::class);
         if (!empty($ids)) {
-            $pqb->addFilter('subtree.id', Operators::IN_LIST, $ids);
+            $pqb->addFilter('ancestor.id', Operators::IN_LIST, $ids);
         }
         $impactedProducts = $pqb->execute()->count();
 

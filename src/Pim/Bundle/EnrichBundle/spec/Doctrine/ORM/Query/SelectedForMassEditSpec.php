@@ -55,7 +55,7 @@ class SelectedForMassEditSpec extends ObjectBehavior
         ];
 
         $productAndProductModelQueryBuilderFactory->create()->willReturn($pqb);
-        $pqb->addFilter('subtree.id', Operators::IN_LIST, ['product_1', 'product_2', 'product_3'])->shouldBeCalled();
+        $pqb->addFilter('ancestor.id', Operators::IN_LIST, ['product_1', 'product_2', 'product_3'])->shouldBeCalled();
         $pqb->addFilter('entity_type', Operators::EQUALS,ProductInterface::class)->shouldBeCalled();
         $pqb->execute()->willReturn($countable);
         $countable->count()->willReturn(3);
@@ -78,7 +78,7 @@ class SelectedForMassEditSpec extends ObjectBehavior
         ];
 
         $productAndProductModelQueryBuilderFactory->create()->willReturn($pqb);
-        $pqb->addFilter('subtree.id', Operators::IN_LIST, ['product_model_1'])->shouldBeCalled();
+        $pqb->addFilter('ancestor.id', Operators::IN_LIST, ['product_model_1'])->shouldBeCalled();
         $pqb->addFilter('entity_type', Operators::EQUALS,ProductInterface::class)->shouldBeCalled();
         $pqb->execute()->willReturn($countable);
         $countable->count()->willReturn(10);
@@ -102,7 +102,7 @@ class SelectedForMassEditSpec extends ObjectBehavior
 
         $productAndProductModelQueryBuilderFactory->create()->willReturn($pqb);
         $pqb->addFilter(
-            'subtree.id',
+            'ancestor.id',
             Operators::IN_LIST,
             ['product_model_1', 'product_model_2', 'product_1', 'product_2']
         )->shouldBeCalled();
@@ -131,7 +131,7 @@ class SelectedForMassEditSpec extends ObjectBehavior
         ];
 
         $productAndProductModelQueryBuilderFactory->create()->willReturn($ppmqb);
-        $ppmqb->addFilter('subtree.id', Operators::IN_LIST, ['product_1', 'product_2'])->shouldBeCalled();
+        $ppmqb->addFilter('ancestor.id', Operators::IN_LIST, ['product_1', 'product_2'])->shouldBeCalled();
         $ppmqb->addFilter('entity_type', Operators::EQUALS, ProductInterface::class)->shouldBeCalled();
         $ppmqb->execute()->willReturn($countable1);
         $countable1->count()->willReturn(2);

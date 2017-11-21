@@ -4,7 +4,7 @@ namespace spec\Pim\Bundle\CatalogBundle\Elasticsearch\Filter\Field;
 
 use Akeneo\Component\StorageUtils\Exception\InvalidPropertyTypeException;
 use PhpSpec\ObjectBehavior;
-use Pim\Bundle\CatalogBundle\Elasticsearch\Filter\Field\SubtreeFilter;
+use Pim\Bundle\CatalogBundle\Elasticsearch\Filter\Field\AncestorFilter;
 use Pim\Bundle\CatalogBundle\Elasticsearch\SearchQueryBuilder;
 use Pim\Component\Catalog\Exception\InvalidOperatorException;
 use Pim\Component\Catalog\Exception\ObjectNotFoundException;
@@ -14,7 +14,7 @@ use Pim\Component\Catalog\Query\Filter\Operators;
 use Pim\Component\Catalog\Repository\ProductModelRepositoryInterface;
 use Pim\Component\Catalog\Repository\ProductRepositoryInterface;
 
-class SubtreeFilterSpec extends ObjectBehavior
+class AncestorFilterSpec extends ObjectBehavior
 {
     public function let(
         ProductModelRepositoryInterface $productModelRepository,
@@ -25,7 +25,7 @@ class SubtreeFilterSpec extends ObjectBehavior
 
     function it_is_initializable()
     {
-        $this->shouldHaveType(SubtreeFilter::class);
+        $this->shouldHaveType(AncestorFilter::class);
     }
 
     function it_is_a_filter()
@@ -42,7 +42,7 @@ class SubtreeFilterSpec extends ObjectBehavior
 
     function it_supports_subtree_id_field()
     {
-        $this->supportsField('subtree.id')->shouldReturn(true);
+        $this->supportsField('ancestor.id')->shouldReturn(true);
         $this->supportsField('subtree.code')->shouldReturn(false);
         $this->supportsField('wrong_field')->shouldReturn(false);
     }
@@ -71,7 +71,7 @@ class SubtreeFilterSpec extends ObjectBehavior
 
         $this->setQueryBuilder($sqb);
         $this->addFieldFilter(
-            'subtree.id',
+            'ancestor.id',
             Operators::IN_LIST,
             ['product_model_1', 'product_model_2'],
             null,
@@ -95,9 +95,9 @@ class SubtreeFilterSpec extends ObjectBehavior
         $this->shouldThrow(
             InvalidOperatorException::notSupported(
                 'IN CHILDREN',
-                SubtreeFilter::class
+                AncestorFilter::class
             )
-        )->during('addFieldFilter', ['subtree.id', Operators::IN_CHILDREN_LIST, null, null, null, []]);
+        )->during('addFieldFilter', ['ancestor.id', Operators::IN_CHILDREN_LIST, null, null, null, []]);
     }
 
     function it_throws_an_exception_if_the_value_is_not_an_array(
@@ -106,11 +106,11 @@ class SubtreeFilterSpec extends ObjectBehavior
         $this->setQueryBuilder($sqb);
 
         $this->shouldThrow(
-            InvalidPropertyTypeException::arrayExpected('ancestors', SubtreeFilter::class, 123)
+            InvalidPropertyTypeException::arrayExpected('ancestors', AncestorFilter::class, 123)
         )->during('addFieldFilter', ['parent', Operators::IN_LIST, 123, null, null, []]);
 
         $this->shouldThrow(
-            InvalidPropertyTypeException::arrayExpected('ancestors', SubtreeFilter::class, 'wrong_value')
+            InvalidPropertyTypeException::arrayExpected('ancestors', AncestorFilter::class, 'wrong_value')
         )->during('addFieldFilter', ['parent', Operators::IN_LIST, 'wrong_value', null, null, []]);
     }
 
@@ -130,6 +130,6 @@ class SubtreeFilterSpec extends ObjectBehavior
             new ObjectNotFoundException(
                 'Object "product model" or "product" with code "invalid_identifier" does not exist'
             )
-        )->during('addFieldFilter', ['subtree.id', Operators::IN_LIST, ['invalid_identifier'], null, null, []]);
+        )->during('addFieldFilter', ['ancestor.id', Operators::IN_LIST, ['invalid_identifier'], null, null, []]);
     }
 }
