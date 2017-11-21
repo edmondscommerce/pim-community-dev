@@ -21,15 +21,36 @@ define(
             tagName: 'div',
             rowTemplate: _.template(rowTemplate),
             thumbnailTemplate: _.template(thumbnailTemplate),
+
+            /**
+             * Returns true if the model is a product model
+             * @return {Boolean}
+             */
+            isProductModel() {
+                return this.model.get('document_type') === 'product_model';
+            },
+
+            /**
+             * Get the name of the completeness cell based on product type
+             * @return {String}
+             */
+            getCompletenessType() {
+                return this.isProductModel() ? 'complete_variant_products' : 'completeness';
+            },
+
+            /**
+             * If the row contains a checked checkbox, set the selected class
+             * @param {HTMLElement} row
+             */
             setCheckedClass(row) {
-                const isChecked = $('.AknGrid-bodyCell--checkbox input:checked', row).length;
+                const isChecked = $('input[type="checkbox"]:checked', row).length;
                 row.toggleClass('AknGrid-bodyRow--selected', 1 === isChecked);
             },
-            getCells(columnNames) {
-                return this.cells.filter(cell => {
-                    return columnNames.includes(cell.column.get('name'));
-                });
-            },
+
+            /**
+             * Returns the 'thumbnail' size image path for a product OR the dummy image
+             * @return {String}
+             */
             getThumbnailImagePath() {
                 const image = this.model.get('image');
 
@@ -37,9 +58,34 @@ define(
 
                 return MediaUrlGenerator.getMediaShowUrl(image.filePath, 'thumbnail');
             },
+
+            /**
+             * Return the cells that match the given column names
+             * @param  {Array} columnNames
+             * @return {Array}
+             */
+            getCells(columnNames) {
+                return this.cells.filter(cell => {
+                    return columnNames.includes(cell.column.get('name'));
+                });
+            },
+
+            /**
+             * Renders the completeness, mass actions and checkbox cells
+             * @param  {HTMLElement} row
+             */
+            renderCells(row) {
+                const type = this.getCompletenessType();
+                const cells = this.getCells([type, 'massAction', '']);
+                cells.forEach(cell => row.append(cell.render().el));
+            },
+
+            /**
+             * {@inheritdoc}
+             */
             render() {
                 const productLabel = this.model.get('label');
-                const isProductModel = this.model.get('document_type') === 'product_model';
+                const isProductModel = this.isProductModel();
                 const row = $(this.rowTemplate({ isProductModel, productLabel }));
 
                 const thumbnail = this.thumbnailTemplate({
@@ -52,11 +98,7 @@ define(
                 });
 
                 row.empty().append(thumbnail);
-
-                const completeType = isProductModel ? 'complete_variant_products' : 'completeness';
-                const cells = this.getCells([completeType, 'massAction', '']);
-                cells.forEach(cell => row.append(cell.render().el));
-
+                this.renderCells(row);
                 this.$el.empty().html(row);
 
                 row.on('click', this.onClick.bind(this));
