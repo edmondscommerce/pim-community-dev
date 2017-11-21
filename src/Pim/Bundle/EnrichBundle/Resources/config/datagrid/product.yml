@@ -8,10 +8,8 @@ datagrid:
                     label: List
                 thumbnail:
                     label: Gallery
-                    displayHeader: false
-                    rowTemplate: oro/datagrid/product-row
+                    rowView: oro/datagrid/product-row
                     gridModifier: AknGrid--galleryView
-                    enabledColumns: [ identifier, image, label, completeness, complete_variant_products]
         source:
             acl_resource:      pim_enrich_product_index
             type:              pim_datasource_product

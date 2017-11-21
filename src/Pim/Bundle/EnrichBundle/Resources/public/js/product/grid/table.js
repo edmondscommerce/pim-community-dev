@@ -109,7 +109,7 @@ define(
             /**
              * Gets the allowed display types from the datagrid config and applies them
              * The allowed options are:
-             * rowTemplate: The module to display a row
+             * rowView: The module to display a row
              * enabledColumns: The columns to display for this view
              * gridModifier: A CSS class modifier for the grid table
              * displayHeader: An option to hide or show the column header
@@ -127,13 +127,9 @@ define(
                 const displayTypes = metadata.options.displayTypes;
                 const displayType = displayTypes[selectedType];
 
-                metadata.columns = metadata.columns.filter(column => {
-                    return displayType.enabledColumns.includes(column.name);
-                });
-
-                metadata.options.rowView = displayType.rowTemplate;
+                metadata.options.rowView = displayType.rowView;
                 metadata.options.gridModifier = displayType.gridModifier;
-                metadata.options.displayHeader = displayType.displayHeader;
+                // metadata.options.displayHeader = displayType.displayHeader;
 
                 return metadata;
             },
