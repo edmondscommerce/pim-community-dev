@@ -42,7 +42,7 @@ define(
             },
 
             getStoredDisplayType() {
-                return localStorage.getItem(`display-selector:${this.config.gridName}`);
+                return localStorage.getItem(`display-selector:${this.config.gridName}`) || 'default';
             },
 
             /**
@@ -120,7 +120,7 @@ define(
             applyDisplayType(gridMetadata) {
                 const selectedType = this.getStoredDisplayType();
 
-                if (!selectedType || selectedType === 'default') return gridMetadata;
+                if (selectedType === 'default') return gridMetadata;
 
                 const metadata = _.clone(gridMetadata);
                 const displayTypes = metadata.options.displayTypes;
