@@ -30,7 +30,6 @@ define(
         return BaseForm.extend({
             config: {},
             loadingMask: null,
-            displayType: null,
 
             /**
              * @inheritdoc

@@ -23,7 +23,7 @@ define(
             thumbnailTemplate: _.template(thumbnailTemplate),
             setCheckedClass(row) {
                 const isChecked = $('.AknGrid-bodyCell--checkbox input:checked', row).length;
-                row.toggleClass('AknGrid-bodyRow--checked', 1 === isChecked);
+                row.toggleClass('AknGrid-bodyRow--selected', 1 === isChecked);
             },
             getCells(columnNames) {
                 return this.cells.filter(cell => {

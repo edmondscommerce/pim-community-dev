@@ -254,7 +254,19 @@
     min-height: 200px;
     background-size: cover;
     background-position: 50%;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
+
+    &:before {
+      content: '';
+      width: 100%;
+      height: 200px;
+      background: @AknDarkBlue;
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      transition: opacity 0.2s ease-in;
+    }
   }
 
   &-title {
@@ -288,6 +300,7 @@
       top: 0;
       left: 0;
       z-index: -1;
+      border-color: inherit;
     }
 
     &:after {
@@ -306,33 +319,6 @@
     text-align: center;
     background: white;
     overflow: visible;
-
-    &:hover {
-      border-color: @AknDarkBlue;
-      background: @AknDarkBlue;
-
-      &:after,
-      &:before {
-       border-color: @AknDarkBlue;
-      }
-
-      .AknGrid-title {
-        color: white;
-      };
-
-      .AknGrid-subTitle {
-        display: none;
-      }
-
-      .AknGrid-bodyCell--actions {
-        width: 100%;
-        display: block;
-
-        .AknButtonList {
-          justify-content: center;
-        }
-      }
-    }
 
     .AknBadge {
       position: absolute;
@@ -366,13 +352,44 @@
         z-index: 2;
         max-width: 100%;
         margin-top: 4px;
+
+        .AknButtonList {
+          justify-content: center;
+        }
       }
+    }
+  }
+
+  &-bodyRow--thumbnail:hover {
+    border-color: @AknDarkBlue;
+    background: @AknDarkBlue;
+
+    .AknGrid-title {
+      color: white;
+    }
+
+    .AknGrid-subTitle {
+      display: none;
+    }
+
+    .AknGrid-bodyCell--actions {
+      width: 100%;
+      display: block;
+    }
+
+    .AknGrid-fullImage {
+      position:relative;
+    }
+
+    .AknGrid-fullImage:before {
+      opacity: 0.7;
     }
   }
 
   &-bodyRow--selected {
     border-color: @AknBlue;
-    background: none;
+    background: white;
+    border-width: 2px;
 
     .AknGrid-bodyCell--checkbox  {
       opacity: 1 !important;
@@ -380,7 +397,8 @@
 
     &:after,
     &:before {
-      border-color: @AknBlue;
+      width: ~"calc(100% + 1px)";
+      height: ~"calc(100% + 1px)";
     }
   }
 
