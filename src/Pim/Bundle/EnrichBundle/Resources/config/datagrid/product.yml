@@ -5,9 +5,9 @@ datagrid:
             filtersAsColumn: true
             displayTypes:
                 default:
-                    label: List
+                    label: grid.display_selector.list
                 gallery:
-                    label: Gallery
+                    label: grid.display_selector.gallery
                     rowView: oro/datagrid/product-row
         source:
             acl_resource:      pim_enrich_product_index

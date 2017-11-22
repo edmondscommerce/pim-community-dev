@@ -41,6 +41,11 @@ define(
                 return BaseForm.prototype.initialize.apply(this, arguments);
             },
 
+            /**
+             * Returns the stored display type for the given grid
+             *
+             * @return {String}
+             */
             getStoredDisplayType() {
                 return localStorage.getItem(`display-selector:${this.config.gridName}`) || 'default';
             },
