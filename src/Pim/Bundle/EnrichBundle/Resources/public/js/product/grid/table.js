@@ -125,7 +125,7 @@ define(
                 const selectedType = this.getStoredDisplayType();
                 const gridName = this.config.gridName;
                 const metadata = _.clone(gridMetadata);
-                const displayTypes = metadata.options.displayTypes;
+                const displayTypes = metadata.options.displayTypes || {};
                 const displayType = displayTypes[selectedType];
 
                 if (selectedType === 'default' || undefined === displayType) {
