@@ -62,29 +62,24 @@ define(
             getThumbnailImagePath() {
                 const image = this.model.get('image');
 
-                if (null === image) return '/media/show/undefined/preview';
+                if (null === image) {
+                    return '/media/show/undefined/preview';
+                }
 
                 return MediaUrlGenerator.getMediaShowUrl(image.filePath, 'thumbnail');
             },
 
             /**
-             * Return the cells that match the given column names
-             * @param  {Array} columnNames
-             * @return {Array}
-             */
-            getCells(columnNames) {
-                return this.cells.filter(cell => {
-                    return columnNames.includes(cell.column.get('name'));
-                });
-            },
-
-            /**
-             * Renders the completeness, mass actions and checkbox (the '') cells
+             * Renders the completeness, row actions and checkbox cells
              * @param  {HTMLElement} row
              */
             renderCells(row) {
                 const type = this.getCompletenessCellType();
-                const cells = this.getCells([type, 'massAction', '']);
+                const columnNames = [type, 'massAction', ''];
+                const cells = this.cells.filter(cell => {
+                    return columnNames.includes(cell.column.get('name'));
+                });
+
                 cells.forEach(cell => row.append(cell.render().el));
             },
 

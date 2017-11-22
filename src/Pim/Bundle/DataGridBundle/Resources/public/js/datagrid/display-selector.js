@@ -61,7 +61,7 @@ define([
          * @param  {Backbone.View} gridView   The datagrid view
          */
         collectDisplayOptions(collection, gridView) {
-            let displayTypes = gridView.options.displayTypes;
+            const displayTypes = gridView.options.displayTypes;
 
             if (undefined === displayTypes) {
                 return;

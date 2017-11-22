@@ -47,7 +47,7 @@ define(
              * @return {String}
              */
             getStoredDisplayType() {
-                return localStorage.getItem(`display-selector:${this.config.gridName}`) || 'default';
+                return localStorage.getItem(`display-selector:${this.config.gridName}`);
             },
 
             /**
