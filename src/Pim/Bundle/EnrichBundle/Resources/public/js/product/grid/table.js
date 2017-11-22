@@ -147,6 +147,23 @@ define(
             },
 
             /**
+             * Set the columns on the datagrid state
+             * @param  {Array} columns   An array of columns
+             * @param  {Object} urlParams Url params
+             * @return {Object}
+             */
+            applyColumns(columns, urlParams) {
+                urlParams = _.clone(urlParams);
+                const { gridName } = this.config;
+                if (_.isArray(columns)) columns = columns.join();
+
+                urlParams[`${gridName}[_parameters][view][columns]`] = columns;
+                DatagridState.set(gridName, { columns: columns });
+
+                return urlParams;
+            },
+
+            /**
              * Set the selected view on the datagrid state
              * @param  {String} viewId    The id of the view
              * @param  {Object} urlParams Url params
@@ -201,23 +218,6 @@ define(
                 }
 
                 DatagridState.set(gridName, { filters: rawFilters });
-
-                return urlParams;
-            },
-
-            /**
-             * Set the columns on the datagrid state
-             * @param  {Array} columns   An array of columns
-             * @param  {Object} urlParams Url params
-             * @return {Object}
-             */
-            applyColumns(columns, urlParams) {
-                urlParams = _.clone(urlParams);
-                const { gridName } = this.config;
-                if (_.isArray(columns)) columns = columns.join();
-
-                urlParams[`${gridName}[_parameters][view][columns]`] = columns;
-                DatagridState.set(gridName, { columns: columns });
 
                 return urlParams;
             },

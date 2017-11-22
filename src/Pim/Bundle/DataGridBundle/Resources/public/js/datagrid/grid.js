@@ -340,11 +340,9 @@ define(
                 var $el = this.$(this.selectors.grid);
 
                 $el.append(this.header.render().$el);
-
                 if (this.footer) {
                     $el.append(this.footer.render().$el);
                 }
-
                 $el.append(this.body.render().$el);
             },
 

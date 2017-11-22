@@ -216,7 +216,6 @@ define([
             if (!gridName) {
                 return;
             }
-
             $el.attr('data-rendered', true);
 
             if (!_.isArray(builders)) {

@@ -92,15 +92,15 @@ define(
              * {@inheritdoc}
              */
             render() {
-                const productLabel = this.model.get('label');
+                const label = this.model.get('label');
                 const isProductModel = this.isProductModel();
-                const row = $(this.rowTemplate({ isProductModel, productLabel }));
+                const row = $(this.rowTemplate({ isProductModel, label }));
 
                 const thumbnail = this.thumbnailTemplate({
                     isProductModel,
+                    label,
                     identifier: this.model.get('identifier'),
-                    imagePath: this.getThumbnailImagePath(),
-                    label: this.model.get('label')
+                    imagePath: this.getThumbnailImagePath()
                 });
 
                 row.empty().append(thumbnail);
