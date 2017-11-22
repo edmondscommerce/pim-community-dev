@@ -169,6 +169,25 @@
     background: white;
   }
 
+  &--gallery {
+    table {
+      display: block !important;
+    }
+
+    thead,
+    .AknActionButton.configure-columns {
+      display: none;
+    }
+
+    tbody {
+      margin-left: 40px;
+      margin-top: 20px;
+      display: grid;
+      grid-gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr) ) ;
+    }
+  }
+
   & &-bodyRow:first-child &-bodyCell {
     border-top: none;
   }
@@ -255,6 +274,7 @@
     background-size: cover;
     background-position: 50%;
     margin-bottom: 16px;
+    position:relative;
 
     &:before {
       content: '';
@@ -330,43 +350,35 @@
     }
 
     .AknGrid-bodyCell {
-      line-height: normal;
       padding: 0;
+    }
 
-      &--checkbox {
-        align-self: start;
-        background: none !important;
-        z-index: 2;
-        position: absolute;
-        top: 10px;
-        left: 10px;
-      }
+    .AknGrid-bodyCell--checkbox {
+      align-self: start;
+      background: none !important;
+      z-index: 2;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+    }
 
-      &--highlight {
-        color: @AknSlateGrey;
-      }
+    .AknGrid-bodyCell--actions {
+      transition: none;
+      color: white;
+      z-index: 2;
+      max-width: 100%;
+      margin-top: 4px;
+    }
 
-      &--actions {
-        transition: none;
-        color: white;
-        z-index: 2;
-        max-width: 100%;
-        margin-top: 4px;
-
-        .AknButtonList {
-          justify-content: center;
-        }
-      }
+    .AknButtonList {
+      justify-content: center;
     }
   }
 
   &-bodyRow--thumbnail:hover {
     border-color: @AknDarkBlue;
     background: @AknDarkBlue;
-
-    .AknGrid-title {
-      color: white;
-    }
+    color: white;
 
     .AknGrid-subTitle {
       display: none;
@@ -375,10 +387,6 @@
     .AknGrid-bodyCell--actions {
       width: 100%;
       display: block;
-    }
-
-    .AknGrid-fullImage {
-      position:relative;
     }
 
     .AknGrid-fullImage:before {
@@ -391,33 +399,10 @@
     background: white;
     border-width: 2px;
 
-    .AknGrid-bodyCell--checkbox  {
-      opacity: 1 !important;
-    }
-
     &:after,
     &:before {
       width: ~"calc(100% + 1px)";
       height: ~"calc(100% + 1px)";
-    }
-  }
-
-  &--gallery {
-    table {
-      display: block !important;
-    }
-
-    thead,
-    .AknActionButton.configure-columns {
-      display: none;
-    }
-
-    tbody {
-      margin-left: 40px;
-      margin-top: 20px;
-      display: grid;
-      grid-gap: 20px;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr) ) ;
     }
   }
 }
