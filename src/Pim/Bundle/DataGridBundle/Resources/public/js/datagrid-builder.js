@@ -188,8 +188,7 @@ define([
                     multipleSorting: metadata.options.multipleSorting || false,
                     entityHint: metadata.options.entityHint,
                     row: metadata.options.rowView ? requireContext(metadata.options.rowView) : null,
-                    displayTypes: metadata.options.displayTypes,
-                    gridModifier: metadata.options.gridModifier
+                    displayTypes: metadata.options.displayTypes
                 };
             },
 

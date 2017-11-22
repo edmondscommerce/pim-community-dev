@@ -46,8 +46,6 @@ define(
          * @extends Backgrid.Grid
          */
         return Backgrid.Grid.extend({
-            gridModifier: '',
-
             /** @property {String} */
             name: 'datagrid',
 
@@ -348,10 +346,6 @@ define(
                 }
 
                 $el.append(this.body.render().$el);
-
-                if (this.gridModifier) {
-                    $el.addClass(this.gridModifier);
-                }
             },
 
             /**

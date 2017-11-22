@@ -1,3 +1,11 @@
+/*
+* This module renders a dropdown list that allows the user to change the
+* display type for a grid.
+*
+* @author    Tamara Robichet <tamara.robichet@akeneo.com>
+* @copyright 2017 Akeneo SAS (http://www.akeneo.com)
+* @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+*/
 define([
     'jquery',
     'underscore',
@@ -16,7 +24,7 @@ define([
     Routing
 ) {
     return BaseForm.extend({
-        className: 'AknGridToolbar-right AknDisplaySelector AknDropdown',
+        className: 'AknGridToolbar-right AknDropdown AknDropdown--toolbar',
         gridName: null,
         template: _.template(template),
         events: {
@@ -92,7 +100,11 @@ define([
          */
         renderDisplayTypes(types) {
             const firstType = Object.keys(types)[0];
-            const selectedType = this.getStoredType() || firstType;
+            let selectedType = this.getStoredType();
+
+            if (undefined === types[selectedType]) {
+                selectedType = firstType;
+            }
 
             this.$el.html(this.template({ types, selectedType }));
 

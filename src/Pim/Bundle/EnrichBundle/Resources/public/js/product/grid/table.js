@@ -108,10 +108,9 @@ define(
             /**
              * Gets the allowed display types from the datagrid config and applies them
              * The allowed options are:
+             *
              * rowView: The module to display a row
-             * enabledColumns: The columns to display for this view
-             * gridModifier: A CSS class modifier for the grid table
-             * displayHeader: An option to hide or show the column header
+             * label: The name of the display type in the display-selector
              *
              * @param  {Object} gridMetadata
              * @param  {Object} selectedType
@@ -119,16 +118,17 @@ define(
              */
             applyDisplayType(gridMetadata) {
                 const selectedType = this.getStoredDisplayType();
-
-                if (selectedType === 'default') return gridMetadata;
-
+                const gridName = this.config.gridName;
                 const metadata = _.clone(gridMetadata);
                 const displayTypes = metadata.options.displayTypes;
                 const displayType = displayTypes[selectedType];
 
+                if (selectedType === 'default' || undefined === displayType) {
+                    return gridMetadata;
+                }
+
                 metadata.options.rowView = displayType.rowView;
-                metadata.options.gridModifier = displayType.gridModifier;
-                // metadata.options.displayHeader = displayType.displayHeader;
+                $(`#${gridName}`).addClass(`AknGrid--${selectedType}`);
 
                 return metadata;
             },
