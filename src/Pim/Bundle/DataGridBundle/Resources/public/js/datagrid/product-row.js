@@ -34,7 +34,7 @@ define(
              * Get the name of the completeness cell based on product type
              * @return {String}
              */
-            getCompletenessType() {
+            getCompletenessCellType() {
                 return this.isProductModel() ? 'complete_variant_products' : 'completeness';
             },
 
@@ -49,6 +49,7 @@ define(
 
             /**
              * Returns the 'thumbnail' size image path for a product OR the dummy image
+             *
              * @return {String}
              */
             getThumbnailImagePath() {
@@ -71,11 +72,11 @@ define(
             },
 
             /**
-             * Renders the completeness, mass actions and checkbox cells
+             * Renders the completeness, mass actions and checkbox (the '') cells
              * @param  {HTMLElement} row
              */
             renderCells(row) {
-                const type = this.getCompletenessType();
+                const type = this.getCompletenessCellType();
                 const cells = this.getCells([type, 'massAction', '']);
                 cells.forEach(cell => row.append(cell.render().el));
             },
@@ -92,9 +93,7 @@ define(
                     isProductModel,
                     identifier: this.model.get('identifier'),
                     imagePath: this.getThumbnailImagePath(),
-                    label: this.model.get('label'),
-                    completeness: this.model.get('completeness'),
-                    complete_variant_products: this.model.get('complete_variant_products')
+                    label: this.model.get('label')
                 });
 
                 row.empty().append(thumbnail);
