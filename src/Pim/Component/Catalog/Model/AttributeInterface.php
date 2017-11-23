@@ -236,7 +236,7 @@ interface AttributeInterface extends
      * Set a property
      *
      * @param string $property
-     * @param mixed  $value
+     * @param mixed $value
      *
      * @return AttributeInterface
      */
@@ -419,7 +419,7 @@ interface AttributeInterface extends
      *
      * @param string $label
      *
-     * @return string
+     * @return AttributeInterface
      */
     public function setLabel($label);
 
