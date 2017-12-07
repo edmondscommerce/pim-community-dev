@@ -375,7 +375,7 @@ abstract class AbstractProduct implements ProductInterface
     /**
      * {@inheritdoc}
      */
-    public function getLabel($locale = null)
+    public function getLabel($locale = null, $scope = null)
     {
         $identifier = (string) $this->getIdentifier();
 
@@ -390,7 +390,8 @@ abstract class AbstractProduct implements ProductInterface
         }
 
         $locale = $attributeAsLabel->isLocalizable() ? $locale : null;
-        $value = $this->getValue($attributeAsLabel->getCode(), $locale);
+        $scope = $attributeAsLabel->isScopable() ? $scope : null;
+        $value = $this->getValue($attributeAsLabel->getCode(), $locale, $scope);
 
         if (null === $value) {
             return $identifier;
@@ -423,6 +424,14 @@ abstract class AbstractProduct implements ProductInterface
         }
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setCategories(Collection $categories): void
+    {
+        $this->categories = $categories;
     }
 
     /**
@@ -461,6 +470,14 @@ abstract class AbstractProduct implements ProductInterface
         sort($codes);
 
         return $codes;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setGroups(Collection $groups): void
+    {
+        $this->groups = $groups;
     }
 
     /**
@@ -622,9 +639,9 @@ abstract class AbstractProduct implements ProductInterface
     /**
      * {@inheritdoc}
      */
-    public function setAssociations(array $associations = [])
+    public function setAssociations(Collection $associations)
     {
-        $this->associations = new ArrayCollection($associations);
+        $this->associations = $associations;
 
         return $this;
     }
@@ -673,5 +690,13 @@ abstract class AbstractProduct implements ProductInterface
         $this->uniqueData->add($uniqueData);
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setUniqueData(Collection $data): void
+    {
+        $this->uniqueData = $data;
     }
 }

@@ -1,16 +1,24 @@
 # 2.0.x
 
+## Bug fixes
+
+- PIM-6958: fix loading a product with a reference data that is not available (simpleselect or multiselect)
+
+# 2.0.7 (2017-11-23)
 
 ## Better manage products with variants!
 
+- PIM-6567: Add edition capabilities to family variants from the UI (distribution of the attributes)
+- PIM-6460: Preventing from deleting attributes used as axis from the family and remove the deleted attributes from the family variants
+- PIM-6986: Change the image in add variant modal
 - API-400: Update partially a family variant with the API
 - API-401: Update partially a list of family variants with the API
-- PIM-65671: Add edition capabilities to family variants
 
 ## Bug fixes
 
 - PIM-6489: fix the sort of attributes in attribute groups
 - PIM-6997: fixes product model indexing CLI command slowness
+- PIM-6959: fix getting the product label according to the scope if needed
 
 ## Improvements
 
@@ -18,15 +26,20 @@
 - PIM-6838: Display completeness panel after Attributes in the PEF
 - PIM-6891: On the grid, execute the ES query only once, not twice
 - PIM-6967: Allow category panels to be resized
-- PIM-6460: Preventing from deleting attributes used as axis from the family and remove the deleted attributes from the family variants.
 - PIM-6585: Add help center link in menu
 - PIM-6833: Aligns technical requirements with documentation
 - PIM-6992: Keep category panel open
-- PIM-6986: Change the image in add variant modal
+- PIM-6791: Change a product in a variant product by import
 
 ## BC breaks
 
 - Change the constructor of `Pim\Bundle\ApiBundle\Controller\FamilyVariantController` to add `Pim\Bundle\ApiBundle\Stream\StreamResourceResponse`.
+- Replace `Pim\Component\Catalog\Builder\ProductBuilderInterface` by `Pim\Component\Connector\Processor\Denormalization\Product\AddParent` and `Pim\Component\Connector\Processor\Denormalization\Product\FindProductToImport` in `Pim\Component\Connector\Processor\Denormalization\ProductProcessor`
+- Change method signature from `Pim\Component\Catalog\Model\ProductInterface::setAssociations(array $associations)` to `Pim\Component\Catalog\Model\ProductInterface::setAssociations(Collection $associations)`
+
+## New jobs
+IMPORTANT: In order for your PIM to work properly, you will need to run the following commands to add the missing job instances.
+- Add the job instance `compute_family_variant_structure_changes`: `bin/console akeneo:batch:create-job "internal" "compute_family_variant_structure_changes" "compute_family_variant_structure_changes" "compute_family_variant_structure_changes" '{"family_variant_codes":["null"]}' "Compute family variant structure changes" --env=prod`
 
 # 2.0.6 (2017-11-03)
 

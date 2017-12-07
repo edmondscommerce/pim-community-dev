@@ -4,6 +4,7 @@ namespace Pim\Bundle\DataGridBundle\Normalizer;
 
 use Pim\Bundle\CatalogBundle\Filter\CollectionFilterInterface;
 use Pim\Bundle\DataGridBundle\Normalizer\IdEncoder;
+use Pim\Bundle\EnrichBundle\Normalizer\ImageNormalizer;
 use Pim\Component\Catalog\Model\ProductInterface;
 use Pim\Component\Catalog\Model\ValueCollectionInterface;
 use Pim\Component\Catalog\Model\ValueInterface;
@@ -25,12 +26,19 @@ class ProductNormalizer implements NormalizerInterface, NormalizerAwareInterface
     /** @var CollectionFilterInterface */
     private $filter;
 
+    /** @var ImageNormalizer */
+    protected $imageNormalizer;
+
     /**
-     * @param CollectionFilterInterface $filter The collection filter
+     * @param CollectionFilterInterface $filter
+     * @param ImageNormalizer           $imageNormalizer
      */
-    public function __construct(CollectionFilterInterface $filter)
-    {
+    public function __construct(
+        CollectionFilterInterface $filter,
+        ImageNormalizer $imageNormalizer
+    ) {
         $this->filter = $filter;
+        $this->imageNormalizer = $imageNormalizer;
     }
 
     /**
@@ -45,6 +53,7 @@ class ProductNormalizer implements NormalizerInterface, NormalizerAwareInterface
         $context = array_merge(['filter_types' => ['pim.transform.product_value.structured']], $context);
         $data = [];
         $locale = current($context['locales']);
+        $scope = current($context['channels']);
 
         $data['identifier'] = $product->getIdentifier();
         $data['family'] = $this->getFamilyLabel($product, $locale);
@@ -53,12 +62,13 @@ class ProductNormalizer implements NormalizerInterface, NormalizerAwareInterface
         $data['values'] = $this->normalizeValues($product->getValues(), $format, $context);
         $data['created'] = $this->normalizer->normalize($product->getCreated(), $format, $context);
         $data['updated'] = $this->normalizer->normalize($product->getUpdated(), $format, $context);
-        $data['label'] = $product->getLabel($locale);
-        $data['image'] = $this->normalizeImage($product->getImage(), $format, $context);
+        $data['label'] = $product->getLabel($locale, $scope);
+        $data['image'] = $this->normalizeImage($product->getImage(), $context);
         $data['completeness'] = $this->getCompleteness($product, $context);
         $data['document_type'] = IdEncoder::PRODUCT_TYPE;
         $data['technical_id'] = $product->getId();
         $data['search_id'] = IdEncoder::encode($data['document_type'], $data['technical_id']);
+        $data['is_checked'] = false;
         $data['complete_variant_product'] = null;
 
         return $data;
@@ -144,14 +154,13 @@ class ProductNormalizer implements NormalizerInterface, NormalizerAwareInterface
 
     /**
      * @param ValueInterface $data
-     * @param string         $format
      * @param array          $context
      *
      * @return array|null
      */
-    protected function normalizeImage(?ValueInterface $data, $format, $context = [])
+    protected function normalizeImage(?ValueInterface $data, array $context = [])
     {
-        return $this->normalizer->normalize($data, $format, $context)['data'];
+        return $this->imageNormalizer->normalize($data, $context['data_locale']);
     }
 
     /**

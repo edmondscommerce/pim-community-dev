@@ -3,6 +3,7 @@
 namespace spec\Pim\Component\Catalog\Model;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use PhpSpec\ObjectBehavior;
 use Pim\Component\Catalog\AttributeTypes;
 use Pim\Component\Catalog\Model\Association;
@@ -35,12 +36,19 @@ class ProductSpec extends ObjectBehavior
         Association $assoc1,
         Association $assoc2,
         AssociationTypeInterface $assocType1,
-        AssociationTypeInterface $assocType2
+        AssociationTypeInterface $assocType2,
+        Collection $associations,
+        \Iterator $associationsIterator
     ) {
+        $associations->getIterator()->willReturn($associationsIterator);
+        $associationsIterator->current()->willReturn($assoc1, $assoc2);
+        $associationsIterator->rewind()->shouldBeCalled();
+        $associationsIterator->valid()->willReturn(true, true, false);
+
         $assoc1->getAssociationType()->willReturn($assocType1);
         $assoc2->getAssociationType()->willReturn($assocType2);
 
-        $this->setAssociations([$assoc1, $assoc2]);
+        $this->setAssociations($associations);
         $this->getAssociationForType($assocType1)->shouldReturn($assoc1);
     }
 
@@ -48,21 +56,33 @@ class ProductSpec extends ObjectBehavior
         Association $assoc1,
         Association $assoc2,
         AssociationTypeInterface $assocType1,
-        AssociationTypeInterface $assocType2
+        AssociationTypeInterface $assocType2,
+        Collection $associations,
+        \Iterator $associationsIterator
     ) {
+        $associations->getIterator()->willReturn($associationsIterator);
+        $associationsIterator->current()->willReturn($assoc1, $assoc2);
+        $associationsIterator->next()->shouldBeCalled();
+        $associationsIterator->rewind()->shouldBeCalled();
+        $associationsIterator->valid()->willReturn(true, true, false);
+
         $assocType1->getCode()->willReturn('ASSOC_TYPE_1');
         $assocType2->getCode()->willReturn('ASSOC_TYPE_2');
         $assoc1->getAssociationType()->willReturn($assocType1);
         $assoc2->getAssociationType()->willReturn($assocType2);
 
-        $this->setAssociations([$assoc1, $assoc2]);
+        $this->setAssociations($associations);
         $this->getAssociationForTypeCode('ASSOC_TYPE_2')->shouldReturn($assoc2);
     }
 
     function it_returns_null_when_i_try_to_get_an_association_with_an_empty_collection(
-        AssociationTypeInterface $assocType1
+        AssociationTypeInterface $assocType1,
+        Collection $associations,
+        \Iterator $associationsIterator
     ) {
-        $this->setAssociations([]);
+        $associations->getIterator()->willReturn($associationsIterator);
+
+        $this->setAssociations($associations);
         $this->getAssociationForType($assocType1)->shouldReturn(null);
     }
 
@@ -126,7 +146,7 @@ class ProductSpec extends ObjectBehavior
         $this->isAttributeRemovable($attribute)->shouldReturn(true);
     }
 
-    function it_gets_the_label_of_the_product(
+    function it_gets_the_label_of_the_product_without_specified_scope(
         FamilyInterface $family,
         AttributeInterface $attributeAsLabel,
         ValueCollectionInterface $values,
@@ -140,6 +160,7 @@ class ProductSpec extends ObjectBehavior
         $family->getId()->willReturn(42);
         $attributeAsLabel->getCode()->willReturn('name');
         $attributeAsLabel->isLocalizable()->willReturn(true);
+        $attributeAsLabel->isScopable()->willReturn(true);
 
         $values->getByCodes('name', null, 'fr_FR')->willReturn($nameValue);
         $values->removeByAttribute($attributeAsLabel)->shouldBeCalled();
@@ -152,6 +173,65 @@ class ProductSpec extends ObjectBehavior
         $this->setIdentifier($identifier);
 
         $this->getLabel('fr_FR')->shouldReturn('Petit outil agricole authentique');
+    }
+
+    function it_gets_the_label_regardless_of_the_specified_scope_if_the_attribute_as_label_is_not_scopable(
+        FamilyInterface $family,
+        AttributeInterface $attributeAsLabel,
+        ValueCollectionInterface $values,
+        ValueInterface $nameValue,
+        ValueInterface $identifier
+    ) {
+        $identifier->getData()->willReturn('shovel');
+        $identifier->getAttribute()->willReturn($attributeAsLabel);
+
+        $family->getAttributeAsLabel()->willReturn($attributeAsLabel);
+        $family->getId()->willReturn(42);
+        $attributeAsLabel->getCode()->willReturn('name');
+        $attributeAsLabel->isLocalizable()->willReturn(true);
+        $attributeAsLabel->isScopable()->willReturn(false);
+
+        $values->getByCodes('name', null, 'fr_FR')->willReturn($nameValue);
+        $values->removeByAttribute($attributeAsLabel)->shouldBeCalled();
+        $values->add($identifier)->shouldBeCalled();
+
+        $nameValue->getData()->willReturn('Petit outil agricole authentique');
+
+        $this->setFamily($family);
+        $this->setValues($values);
+        $this->setIdentifier($identifier);
+
+        $this->getLabel('fr_FR', 'mobile')->shouldReturn('Petit outil agricole authentique');
+    }
+
+    function it_gets_the_label_if_the_scope_is_specified_and_the_attribute_as_label_is_scopable(
+        FamilyInterface $family,
+        AttributeInterface $attributeAsLabel,
+        ValueCollectionInterface $values,
+        ValueInterface $nameValue,
+        ValueInterface $identifier
+    ) {
+        $identifier->getData()->willReturn('shovel');
+        $identifier->getAttribute()->willReturn($attributeAsLabel);
+
+        $family->getAttributeAsLabel()->willReturn($attributeAsLabel);
+        $family->getId()->willReturn(42);
+        $attributeAsLabel->getCode()->willReturn('name');
+        $attributeAsLabel->isLocalizable()->willReturn(true);
+        $attributeAsLabel->isScopable()->willReturn(true);
+
+        $values->getByCodes('name', 'mobile', 'fr_FR')->willReturn($nameValue);
+        $values->removeByAttribute($attributeAsLabel)->shouldBeCalled();
+        $values->add($identifier)->shouldBeCalled();
+
+        $nameValue->getData()->willReturn('Petite pelle');
+
+        $this->setFamily($family);
+        $this->setValues($values);
+        $this->setIdentifier($identifier);
+        $this->setScope('mobile');
+
+        $this->getLabel('fr_FR', 'mobile')->shouldReturn('Petite pelle');
     }
 
     function it_gets_the_identifier_as_label_if_there_is_no_family(
@@ -208,6 +288,7 @@ class ProductSpec extends ObjectBehavior
         $family->getId()->willReturn(42);
         $attributeAsLabel->getCode()->willReturn('name');
         $attributeAsLabel->isLocalizable()->willReturn(true);
+        $attributeAsLabel->isScopable()->willReturn(false);
 
         $values->removeByAttribute($attributeAsLabel)->shouldBeCalled();
         $values->add($identifier)->shouldBeCalled();
@@ -234,6 +315,7 @@ class ProductSpec extends ObjectBehavior
         $family->getId()->willReturn(42);
         $attributeAsLabel->getCode()->willReturn('name');
         $attributeAsLabel->isLocalizable()->willReturn(true);
+        $attributeAsLabel->isScopable()->willReturn(false);
 
         $values->getByCodes('name', null, 'fr_FR')->willReturn($nameValue);
         $values->removeByAttribute($attributeAsLabel)->shouldBeCalled();

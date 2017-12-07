@@ -1,5 +1,6 @@
 # Grid action messages
 confirmation:
+    title: Confirm
     remove:
         item:             Are you sure you want to delete this item?
         association_type: Are you sure you want to delete this association type?
@@ -407,6 +408,7 @@ pim_enrich:
                 update_failed: The attribute could not be updated.
                 create_successful: Attribute successfully created.
                 create_failed: The attribute could not be created.
+                field_not_ready: "The attribute cannot be saved right now. The following fields are not ready: {{ fields }}"
             scopable: Scopable
             type:
                 pim_catalog_identifier:             Identifier
@@ -427,6 +429,7 @@ pim_enrich:
                 email: E-mail
                 regexp: Regular expression
                 url: URL
+            title: attribute
         attribute_group:
             info:
                 update_failed: Attribute group could not be updated
@@ -475,6 +478,9 @@ pim_enrich:
                         number_of_associations: "{{ productCount }} product(s) and {{ groupCount }} group(s)"
                     association_type_selector: Association type
                     target: Target
+                    manage: Add {{ associationType }} associations
+                    manage_description: Select the products you want to associate with the current product
+                    add_associations: Add associations
                 attributes:
                     title: Attributes
                     btn:
@@ -795,7 +801,9 @@ pim_enrich:
                         select_attributes: Add attributes
                         add: Add
                         attributes_groups_selected: '{{ itemsCount }} group(s) selected'
-
+        basket:
+            title: Basket
+            empty_basket: Basket is empty
     job:
         upload: Drop your {{ type }} file here, or click to browse disk
     export:
