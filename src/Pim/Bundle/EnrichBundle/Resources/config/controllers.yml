@@ -333,6 +333,7 @@ services:
             - '@validator'
             - '@akeneo_file_storage.file_storage.path_generator'
             - '%tmp_storage_dir%'
+            - '%kernel.debug%'
 
     pim_enrich.controller.rest.product:
         class: '%pim_enrich.controller.rest.product.class%'

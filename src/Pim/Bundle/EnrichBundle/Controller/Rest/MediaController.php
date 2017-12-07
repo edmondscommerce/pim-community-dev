@@ -26,16 +26,20 @@ class MediaController
     /** @var string */
     protected $uploadDir;
 
+    /** @var bool */
+    protected $isDebug;
+
     /**
-     * @param ValidatorInterface     $validator
+     * @param ValidatorInterface $validator
      * @param PathGeneratorInterface $pathGenerator
-     * @param string                 $uploadDir
+     * @param string $uploadDir
      */
-    public function __construct(ValidatorInterface $validator, PathGeneratorInterface $pathGenerator, $uploadDir)
+    public function __construct(ValidatorInterface $validator, PathGeneratorInterface $pathGenerator, $uploadDir, bool $isDebug)
     {
         $this->validator = $validator;
         $this->pathGenerator = $pathGenerator;
         $this->uploadDir = $uploadDir;
+        $this->isDebug = $isDebug;
     }
 
     /**
@@ -55,7 +59,7 @@ class MediaController
             $errors = [];
             foreach ($violations as $violation) {
                 $errors[$violation->getPropertyPath()] = [
-                    'message'       => $violation->getMessage(),
+                    'message' => $violation->getMessage(),
                     'invalid_value' => $violation->getInvalidValue()
                 ];
             }
@@ -71,14 +75,17 @@ class MediaController
                 $file->getClientOriginalName()
             );
         } catch (FileException $e) {
-            //TODO: more specific message if debug mode is on?
-            return new JsonResponse("Unable to create target-directory, or moving file.", 400);
+            if ($this->isDebug) {
+                throw $e;
+            }
+
+            return new JsonResponse("Error uploading file, " . $e->getMessage(), 400);
         }
 
         return new JsonResponse(
             [
                 'originalFilename' => $file->getClientOriginalName(),
-                'filePath'         => $movedFile->getPathname()
+                'filePath' => $movedFile->getPathname()
             ]
         );
     }
