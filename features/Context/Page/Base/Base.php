@@ -289,6 +289,14 @@ class Base extends Page
             );
         }
         if (null === $button) {
+            $button = $this->getFirstVisible(
+                $this->findAll(
+                    'xpath',
+                    sprintf("//*[contains(@class, 'AknButton')][normalize-space(text()) = '%s']", $locator)
+                )
+            );
+        }
+        if (null === $button) {
             $button =  $this->getFirstVisible(
                 $this->findAll('css', sprintf('a[title="%s"]', $locator))
             );
@@ -398,15 +406,16 @@ class Base extends Page
     }
 
     /**
-     * @param string $item
-     * @param string $button
+     * Gets a dropdown button containing text
      *
-     * @return NodeElement
+     * @param string $text
+     *
+     * @return null|Element
      */
-    public function getDropdownButtonItem($item, $button)
+    public function getDropdownButton($text)
     {
-        $dropdownToggle = $this->spin(function () use ($button) {
-            $toggle = $this->find('css', sprintf('*[data-toggle="dropdown"]:contains("%s")', $button));
+        return $this->spin(function () use ($text) {
+            $toggle = $this->find('css', sprintf('*[data-toggle="dropdown"]:contains("%s")', $text));
             if (null !== $toggle) {
                 if (!$toggle->getParent()->hasClass('open')) {
                     $toggle->click();
@@ -414,8 +423,18 @@ class Base extends Page
 
                 return $toggle;
             }
-        }, sprintf('Dropdown button "%s" not found', $button));
+        }, sprintf('Dropdown button "%s" not found', $text));
+    }
 
+    /**
+     * @param string $item
+     * @param string $button
+     *
+     * @return NodeElement
+     */
+    public function getDropdownButtonItem($item, $button)
+    {
+        $dropdownToggle = $this->getDropdownButton($button);
         $dropdownMenu = $dropdownToggle->getParent()->find('css', '.dropdown-menu, .AknDropdown-menu');
 
         return $this->spin(function () use ($dropdownMenu, $item) {
@@ -472,7 +491,7 @@ class Base extends Page
                     return strpos($element->getText(), $tab) !== false;
                 }
             );
-            
+
             return array_shift($matchingElements);
         }, sprintf('Could not find a tab named "%s"', $tab));
 

@@ -38,7 +38,10 @@ class ProductRepository extends EntityRepository implements
             ->where('p.identifier IN (:identifiers)')
             ->setParameter('identifiers', $identifiers);
 
-        return $qb->getQuery()->execute();
+        $query = $qb->getQuery();
+        $query->useQueryCache(false);
+
+        return $query->execute();
     }
 
     /**
@@ -113,14 +116,14 @@ class ProductRepository extends EntityRepository implements
     /**
      * {@inheritdoc}
      */
-    public function countAll()
+    public function countAll(): int
     {
-        $count = $this->createQueryBuilder('p')
-            ->select('COUNT(p.id)')
+        $qb = $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)');
+
+        return (int) $qb
             ->getQuery()
             ->getSingleScalarResult();
-
-        return $count;
     }
 
     /**

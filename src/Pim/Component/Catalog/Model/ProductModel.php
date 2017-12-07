@@ -84,7 +84,7 @@ class ProductModel implements ProductModelInterface
     /**
      * {@inheritdoc}
      */
-    public function getCode(): string
+    public function getCode(): ?string
     {
         return $this->code;
     }
@@ -261,6 +261,14 @@ class ProductModel implements ProductModelInterface
         }
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setCategories(Collection $categories): void
+    {
+        $this->categories = $categories;
     }
 
     /**
@@ -490,7 +498,7 @@ class ProductModel implements ProductModelInterface
     /**
      * {@inheritdoc}
      */
-    public function getLabel(string $localeCode = null): string
+    public function getLabel(string $localeCode = null, string $scopeCode = null): string
     {
         $code = (string) $this->getCode();
         $familyVariant = $this->familyVariant;
@@ -506,7 +514,8 @@ class ProductModel implements ProductModelInterface
         }
 
         $localeCode = $attributeAsLabel->isLocalizable() ? $localeCode : null;
-        $value = $this->getValue($attributeAsLabel->getCode(), $localeCode);
+        $scopeCode = $attributeAsLabel->isScopable() ? $scopeCode : null;
+        $value = $this->getValue($attributeAsLabel->getCode(), $localeCode, $scopeCode);
 
         if (null === $value) {
             return $code;
