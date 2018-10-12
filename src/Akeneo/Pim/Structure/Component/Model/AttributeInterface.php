@@ -422,7 +422,7 @@ interface AttributeInterface extends
      *
      * @param string $label
      *
-     * @return string
+     * @return AttributeInterface
      */
     public function setLabel($label);
 
