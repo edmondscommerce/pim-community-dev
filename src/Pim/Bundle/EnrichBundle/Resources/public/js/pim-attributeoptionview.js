@@ -109,8 +109,8 @@ define(
                 if (!this.model.id || this.dirty) {
                     if (this.dirty) {
                         Dialog.confirm(
-                            __('confirm.attribute_option.cancel_edition_on_new_option_text'),
-                            __('confirm.attribute_option.cancel_edition_on_new_option_title'),
+                            __('pim_enrich.entity.attribute_option.module.edit.cancel_description'),
+                            __('pim_enrich.entity.attribute_option.module.edit.cancel_title'),
                             function () {
                                 this.showReadableItem(this);
                                 if (!this.model.id) {
@@ -132,12 +132,12 @@ define(
                 var itemCode = this.el.firstChild.innerText;
 
                 Dialog.confirmDelete(
-                    __('pim_enrich.item.delete.confirm.content', {'itemName': itemCode}),
-                    __('pim_enrich.item.delete.confirm.title', {'itemName': itemCode}),
+                    __('pim_enrich.entity.fallback.module.delete.item_placeholder', {'itemName': itemCode}),
+                    __('pim_enrich.entity.fallback.module.delete.title', {'itemName': itemCode}),
                     function () {
                         this.parent.deleteItem(this);
                     }.bind(this),
-                    __('pim_menu.item.attribute')
+                    __('pim_enrich.entity.attribute.plural_label')
                 );
             },
             updateItem: function () {
@@ -156,6 +156,8 @@ define(
                             this.stopEditItem();
                             if (!this.parent.sortable) {
                                 this.parent.render();
+                            } else {
+                                this.parent.updateSorting();
                             }
                         }.bind(this),
                         error: this.showValidationErrors.bind(this)
@@ -176,7 +178,7 @@ define(
                 } else {
                     Dialog.alert(
                         __('alert.attribute_option.error_occured_during_submission'),
-                        __('error.saving.attribute_option')
+                        __('pim_enrich.entity.attribute_option.flash.update.fail')
                     );
                 }
             },
@@ -228,35 +230,7 @@ define(
         var ItemCollectionView = Backbone.View.extend({
             tagName: 'table',
             className: 'AknGrid AknGrid--unclickable table attribute-option-view',
-            template: _.template(
-                '<!-- Pim/Bundle/EnrichBundle/Resources/public/js/pim-attributeoptionview.js -->' +
-                '<colgroup>' +
-                    '<col class="code" span="1"></col>' +
-                    '<col class="fields" span="<%= locales.length %>"></col>' +
-                    '<col class="action" span="1"></col>' +
-                '</colgroup>' +
-                '<thead>' +
-                    '<tr>' +
-                        '<th class="AknGrid-headerCell"><%= code_label %></th>' +
-                        '<% _.each(locales, function (locale) { %>' +
-                        '<th class="AknGrid-headerCell">' +
-                            '<%= locale %>' +
-                        '</th>' +
-                        '<% }); %>' +
-                        '<th class="AknGrid-headerCell AknGrid-headerCell--right">Action</th>' +
-                    '</tr>' +
-                '</thead>' +
-                '<tbody></tbody>' +
-                '<tfoot>' +
-                    '<tr class="AknGrid-bodyRow">' +
-                        '<td class="AknGrid-bodyCell AknGrid-bodyCell--right" colspan="<%= 2 + locales.length %>">' +
-                            '<span class="AknButton AknButton--grey AknButton--small option-add">' +
-                                '<%= add_option_label %>' +
-                            '</span>' +
-                        '</td>' +
-                    '</tr>' +
-                '</tfoot>'
-            ),
+            template: _.template(indexTemplate),
             events: {
                 'click .option-add': 'addItem'
             },
@@ -287,8 +261,8 @@ define(
 
                 this.$el.html(this.template({
                     locales: this.locales,
-                    add_option_label: __('label.attribute_option.add_option'),
-                    code_label: __('Code')
+                    add_option_label: __('pim_enrich.entity.product.module.attribute.add_option'),
+                    code_label: __('pim_common.code')
                 }));
 
                 _.each(_.sortBy(this.collection.models, function (attributeOptionItem) {
@@ -439,7 +413,7 @@ define(
                             message = response.responseText;
                         }
 
-                        Dialog.alert(message, __('error.removing.attribute_option'));
+                        Dialog.alert(message, __('pim_enrich.entity.attribute_option.flash.delete.fail'));
                     }.bind(this)
                 });
             },
@@ -460,7 +434,6 @@ define(
                 }
             },
             updateSorting: function () {
-                this.inLoading(true);
                 var sorting = [];
 
                 var rows = this.$el.find('tbody tr');
@@ -472,9 +445,7 @@ define(
                     url: this.sortingUrl,
                     type: 'PUT',
                     data: JSON.stringify(sorting)
-                }).done(function () {
-                    this.inLoading(false);
-                }.bind(this));
+                });
             },
             inLoading: function (loading) {
                 if (loading) {

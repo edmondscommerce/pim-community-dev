@@ -2,12 +2,12 @@
 
 namespace spec\Pim\Bundle\EnrichBundle\Connector\Reader\MassEdit;
 
-use Akeneo\Component\Batch\Job\JobParameters;
-use Akeneo\Component\Batch\Model\JobExecution;
-use Akeneo\Component\Batch\Model\StepExecution;
+use Akeneo\Tool\Component\Batch\Job\JobParameters;
+use Akeneo\Tool\Component\Batch\Model\JobExecution;
+use Akeneo\Tool\Component\Batch\Model\StepExecution;
 use PhpSpec\ObjectBehavior;
-use Pim\Component\Catalog\Model\FamilyInterface;
-use Pim\Component\Catalog\Repository\FamilyRepositoryInterface;
+use Akeneo\Pim\Structure\Component\Model\FamilyInterface;
+use Akeneo\Pim\Structure\Component\Repository\FamilyRepositoryInterface;
 
 class FilteredFamilyReaderSpec extends ObjectBehavior
 {
@@ -37,8 +37,11 @@ class FilteredFamilyReaderSpec extends ObjectBehavior
         );
 
         $stepExecution->getJobExecution()->willReturn($jobExecution);
-        $families = [$pantFamily, $sockFamily];
-        $familyRepository->findByIds([12, 13, 14])->willReturn($families);
+
+        $familyRepository->find(12)->willReturn($pantFamily);
+        $familyRepository->find(13)->willReturn(null);
+        $familyRepository->find(14)->willReturn($sockFamily);
+
         $stepExecution->incrementSummaryInfo('read')->shouldBeCalled();
 
         $this->setStepExecution($stepExecution);

@@ -2,18 +2,22 @@
 
 namespace spec\Pim\Bundle\EnrichBundle\ProductQueryBuilder;
 
-use Akeneo\Component\StorageUtils\Cursor\CursorInterface;
+use Akeneo\Tool\Component\StorageUtils\Cursor\CursorInterface;
 use PhpSpec\ObjectBehavior;
-use Pim\Bundle\CatalogBundle\Elasticsearch\SearchQueryBuilder;
-use Pim\Component\Catalog\Query\Filter\Operators;
-use Pim\Component\Catalog\Query\ProductQueryBuilderInterface;
+use Akeneo\Pim\Enrichment\Bundle\Elasticsearch\SearchQueryBuilder;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Query\Filter\Operators;
+use Akeneo\Pim\Enrichment\Component\Product\Query\ProductQueryBuilderInterface;
+use Pim\Bundle\EnrichBundle\ProductQueryBuilder\ProductAndProductModelSearchAggregator;
 use Prophecy\Argument;
 
 class ProductAndProductModelQueryBuilderSpec extends ObjectBehavior
 {
-    function let(ProductQueryBuilderInterface $pqb)
-    {
-        $this->beConstructedWith($pqb);
+    function let(
+        ProductQueryBuilderInterface $pqb,
+        ProductAndProductModelSearchAggregator $searchAggregator
+    ) {
+        $this->beConstructedWith($pqb, $searchAggregator);
     }
 
     function it_is_a_product_query_builder()
@@ -51,99 +55,437 @@ class ProductAndProductModelQueryBuilderSpec extends ObjectBehavior
         $this->setQueryBuilder($searchQb)->shouldReturn($this);
     }
 
-    function it_executes_the_query_by_adding_a_filter_on_attributes($pqb, CursorInterface $cursor)
-    {
-        $pqb->getRawFilters()->willReturn(
+    function it_executes_the_query_and_aggregate_results(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
             [
-                [
-                    'field'    => 'foo',
-                    'operator' => 'CONTAINS',
-                    'value'    => '42',
-                    'context'  => [],
-                    'type'     => 'attribute'
-                ],
-                [
-                    'field'    => 'bar',
-                    'operator' => 'IN LIST',
-                    'value'    => ['toto'],
-                    'context'  => [],
-                    'type'     => 'field'
-                ],
-                [
-                    'field'    => 'baz',
-                    'operator' => 'EQUALS',
-                    'value'    => 'sku_893042',
-                    'context'  => [],
-                    'type'     => 'attribute'
-                ],
-            ]
-        );
-
-        $pqb->addFilter('attributes_for_this_level', Operators::IN_LIST, ['foo', 'baz'], [])->shouldBeCalled();
-        $pqb->execute()->willReturn($cursor);
-
-        $this->execute()->shouldReturn($cursor);
-    }
-
-    function it_executes_the_query_by_adding_a_default_filter_on_parents_when_there_is_no_attribute_filter_nor_parent_filter($pqb, CursorInterface $cursor)
-    {
-        $pqb->getRawFilters()->willReturn(
+                'field'    => 'foo',
+                'operator' => 'CONTAINS',
+                'value'    => '42',
+                'context'  => [],
+                'type'     => 'attribute'
+            ],
             [
-                [
-                    'field'    => 'bar',
-                    'operator' => 'IN LIST',
-                    'value'    => ['toto'],
-                    'context'  => [],
-                    'type'     => 'field'
-                ],
-            ]
-        );
-
-        $pqb->addFilter('parent', Operators::IS_EMPTY, null, [])->shouldBeCalled();
-        $pqb->addFilter('attributes_for_this_level', Argument::cetera())->shouldNotBeCalled();
-        $pqb->execute()->willReturn($cursor);
-
-        $this->execute()->shouldReturn($cursor);
-    }
-
-    function it_executes_the_query_by_adding_a_filter_on_attributes_and_filter_on_parent($pqb, CursorInterface $cursor)
-    {
-        $pqb->getRawFilters()->willReturn(
+                'field'    => 'bar',
+                'operator' => 'IN LIST',
+                'value'    => ['toto'],
+                'context'  => [],
+                'type'     => 'field'
+            ],
             [
-                [
-                    'field'    => 'foo',
-                    'operator' => 'CONTAINS',
-                    'value'    => '42',
-                    'context'  => [],
-                    'type'     => 'attribute'
-                ],
-                [
-                    'field'    => 'bar',
-                    'operator' => 'IN LIST',
-                    'value'    => ['toto'],
-                    'context'  => [],
-                    'type'     => 'field'
-                ],
-                [
-                    'field'    => 'baz',
-                    'operator' => 'EQUALS',
-                    'value'    => 'sku_893042',
-                    'context'  => [],
-                    'type'     => 'attribute'
-                ],
-                [
-                    'field'    => 'parent',
-                    'operator' => 'IN LIST',
-                    'value'    => ['toto'],
-                    'context'  => [],
-                    'type'     => 'field'
-                ],
-            ]
-        );
+                'field'    => 'baz',
+                'operator' => 'EQUALS',
+                'value'    => 'sku_893042',
+                'context'  => [],
+                'type'     => 'attribute'
+            ],
+        ];
+
+        $pqb->getRawFilters()->willReturn($rawFilters);
 
         $pqb->addFilter('parent', Operators::IS_EMPTY, null, [])->shouldNotBeCalled();
-        $pqb->addFilter('attributes_for_this_level', Operators::IN_LIST, ['foo', 'baz'], [])->shouldBeCalled();
+
         $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_executes_the_query_by_adding_a_filter_on_attributes_and_categories(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters =[
+            [
+                'field'    => 'categories',
+                'operator' => 'IN OR UNCLASSIFIED',
+                'value'    => ['toto'],
+                'context'  => [],
+                'type'     => 'field'
+            ]
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Operators::IS_EMPTY, null, [])->shouldBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_executes_the_query_with_operator_is_empty_on_an_attribute(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'foo',
+                'operator' => 'EMPTY',
+                'value'    => null,
+                'context'  => [],
+                'type'     => 'attribute',
+            ],
+            [
+                'field'    => 'foo_currency1',
+                'operator' => 'EMPTY FOR CURRENCY',
+                'value'    => null,
+                'context'  => [],
+                'type'     => 'attribute',
+            ],
+            [
+                'field'    => 'foo_currency2',
+                'operator' => 'EMPTY ON ALL CURRENCIES',
+                'value'    => null,
+                'context'  => [],
+                'type'     => 'attribute',
+            ],
+            [
+                'field'    => 'bar',
+                'operator' => 'IN',
+                'value'    => ['toto'],
+                'context'  => [],
+                'type'     => 'field',
+            ],
+            [
+                'field'    => 'categories',
+                'operator' => 'IN',
+                'value'    => ['category_A'],
+                'context'  => [],
+                'type'     => 'field',
+            ],
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Operators::IS_EMPTY, null, [])->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_when_there_is_a_source_attribute_filter(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'bar',
+                'operator' => 'IN LIST',
+                'value'    => ['toto'],
+                'context'  => [],
+                'type'     => 'attribute'
+            ],
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_when_there_is_a_source_parent_filter(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'parent',
+                'operator' => 'IN LIST',
+                'value'    => ['toto'],
+                'context'  => [],
+                'type'     => 'field'
+            ]
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldNotBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_nor_group_when_there_is_a_filter_on_enabled(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'enabled',
+                'operator' => '=',
+                'value'    => true,
+                'context'  => [],
+                'type'     => 'field'
+            ]
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('entity_type', '=', ProductInterface::class, Argument::cetera())->shouldBeCalled();
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldNotBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_when_there_is_a_source_id_filter(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'id',
+                'operator' => 'IN LIST',
+                'value'    => ['toto'],
+                'context'  => [],
+                'type'     => 'field'
+            ],
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_when_there_is_a_source_identifier_filter(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'identifier',
+                'operator' => 'IN LIST',
+                'value'    => ['toto'],
+                'context'  => [],
+                'type'     => 'field'
+            ],
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_when_there_is_a_source_entity_type_filter(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'entity_type',
+                'operator' => 'EQUALS',
+                'value'    => 'toto',
+                'context'  => [],
+                'type'     => 'field'
+            ],
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_when_there_is_a_source_ancestor_filter(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'ancestor.id',
+                'operator' => 'IN LIST',
+                'value'    => ['toto'],
+                'context'  => [],
+                'type'     => 'field'
+            ],
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_when_there_is_a_source_ancestor_or_self_filter(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'self_and_ancestor.id',
+                'operator' => 'IN LIST',
+                'value'    => ['toto'],
+                'context'  => [],
+                'type'     => 'field'
+            ],
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_when_there_is_a_filter_on_category_with_operator_IN_LIST(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'categories',
+                'operator' => 'IN',
+                'value'    => ['category_A', 'category_B'],
+                'context'  => [],
+                'type'     => 'field'
+            ],
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_when_there_is_a_filter_on_category_with_operator_IN_CHILDREN(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'categories',
+                'operator' => 'IN CHILDREN',
+                'value'    => ['category_A', 'category_B'],
+                'context'  => [],
+                'type'     => 'field'
+            ],
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
+
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_aggregate_when_there_is_a_filter_on_parent(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'parent',
+                'operator' => '=',
+                'value'    => 'model-tshirt-divided-blue',
+                'context'  => [],
+                'type'     => 'field'
+            ],
+            [
+                'field'    => 'foo',
+                'operator' => 'CONTAINS',
+                'value'    => '42',
+                'context'  => [],
+                'type'     => 'attribute'
+            ],
+            [
+                'field'    => 'categories',
+                'operator' => 'IN LIST',
+                'value'    => ['category_A', 'category_'],
+                'context'  => [],
+                'type'     => 'field'
+            ]
+        ];
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $sqb->addFilter(Argument::cetera())->shouldNotBeCalled();
+
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldNotBeCalled();
+        $this->execute()->shouldReturn($cursor);
+    }
+
+    function it_does_not_add_a_default_filter_on_parents_when_there_is_a_filter_on_groups(
+        $pqb,
+        $searchAggregator,
+        CursorInterface $cursor,
+        SearchQueryBuilder $sqb
+    ) {
+        $rawFilters = [
+            [
+                'field'    => 'groups',
+                'operator' => 'IN',
+                'value'    => ['group_A', 'group_B'],
+                'context'  => [],
+                'type'     => 'field'
+            ],
+        ];
+
+        $pqb->getRawFilters()->willReturn($rawFilters);
+
+        $pqb->addFilter('parent', Argument::cetera())->shouldNotBeCalled();
+        $pqb->execute()->willReturn($cursor);
+        $pqb->getQueryBuilder()->willReturn($sqb);
+        $searchAggregator->aggregateResults($sqb, $rawFilters)->shouldBeCalled();
 
         $this->execute()->shouldReturn($cursor);
     }

@@ -1,4 +1,4 @@
- 'use strict';
+'use strict';
 /**
  * Attribute tab extension
  *
@@ -98,6 +98,8 @@ define(
             });
 
             const container = fieldCollection.fields.sort(
+                (firstField, secondField) => firstField.attribute.code.localeCompare(secondField.attribute.code)
+            ).sort(
                 (firstField, secondField) => firstField.attribute.sort_order - secondField.attribute.sort_order
             ).reduce((container, field) => {
                 _.defer(field.render.bind(field));
@@ -144,14 +146,12 @@ define(
                 this.listenTo(UserContext, 'change:catalogLocale change:catalogScope', this.render);
                 this.listenTo(this.getRoot(), 'pim_enrich:form:entity:validation_error', this.render);
                 this.listenTo(this.getRoot(), 'pim_enrich:form:entity:post_fetch', this.render);
-                this.listenTo(this.getRoot(), 'pim_enrich:form:entity:post_update', this.clearFillFieldProvider);
                 this.listenTo(this.getRoot(), 'pim_enrich:form:add-attribute:after', this.render);
                 this.listenTo(this.getRoot(), 'pim_enrich:form:show_attribute', this.showAttribute);
                 this.listenTo(this.getRoot(), 'pim_enrich:form:scope_switcher:pre_render', this.initScope.bind(this));
                 this.listenTo(this.getRoot(), 'pim_enrich:form:scope_switcher:change', (scopeEvent) => {
                     if ('base_product' === scopeEvent.context) {
                         this.setScope(scopeEvent.scopeCode, {silent: true});
-                        this.clearFillFieldProvider();
                         this.setScope(scopeEvent.scopeCode);
                     }
                 });
@@ -159,7 +159,6 @@ define(
                 this.listenTo(this.getRoot(), 'pim_enrich:form:locale_switcher:change', (localeEvent) => {
                     if ('base_product' === localeEvent.context) {
                         this.setLocale(localeEvent.localeCode, {silent: true});
-                        this.clearFillFieldProvider();
                     }
                 });
 
@@ -199,11 +198,16 @@ define(
                     .then((fields) => {
                         this.rendering = false;
                         $.when(
-                            AttributeGroupManager.getAttributeGroupsForObject(data),
-                            toFillFieldProvider.getFields(this.getRoot(), data.values)
-                        ).then((attributeGroups, fieldsToFill) => {
+                            AttributeGroupManager.getAttributeGroupsForObject(data)
+                        ).then((attributeGroups) => {
+                            const scope = UserContext.get('catalogScope');
+                            const locale = UserContext.get('catalogLocale');
+                            const fieldsToFill = toFillFieldProvider.getMissingRequiredFields(data, scope, locale);
+
                             const sections = _.values(
                                 fields.reduce(groupFieldsBySection(attributeGroups, fieldsToFill), {})
+                            ).sort((firstSection, secondSection) =>
+                                firstSection.attributeGroup.code.localeCompare(secondSection.attributeGroup.code)
                             ).sort((firstSection, secondSection) =>
                                 firstSection.attributeGroup.sort_order - secondSection.attributeGroup.sort_order
                             );
@@ -215,7 +219,7 @@ define(
                                     this.attributeGroupTemplate,
                                     i18n.getLabel(
                                         section.attributeGroup.labels,
-                                        UserContext.get('uiLocale'),
+                                        UserContext.get('catalogLocale'),
                                         section.attributeGroup.code
                                     )
                                 ));
@@ -224,17 +228,25 @@ define(
                             const objectValuesDom = this.$('.object-values').empty();
                             if (_.isEmpty(fields)) {
                                 objectValuesDom.append(this.noDataTemplate({
-                                    hint: __('oro.datagrid.noresults'),
-                                    subHint: __('oro.datagrid.noresults_subTitle')
+                                    hint: 'pim_datagrid.no_results',
+                                    subHint: 'pim_datagrid.no_results_subtitle',
+                                    imageClass: '',
+                                    __
                                 }));
                             } else {
                                 objectValuesDom.append(fieldsView);
                             }
                             this.renderExtensions();
                             this.delegateEvents();
+
+                            _.defer(this.sticky.bind(this));
                         });
                     });
 
+                if (null !== sessionStorage.getItem('filter_missing_required_attributes')) {
+                    sessionStorage.removeItem('filter_missing_required_attributes');
+                    this.filterRequiredAttributes();
+                }
 
                 return this;
             },
@@ -256,10 +268,11 @@ define(
                         AttributeManager.isOptional(field.attribute, object)
                     );
                 }).then(function (field, channels, isOptional) {
-                    var scope = _.findWhere(channels, { code: UserContext.get('catalogScope') });
-                    var locale = UserContext.get('catalogLocale');
+                    const scope = _.findWhere(channels, { code: UserContext.get('catalogScope') });
+                    const locale = UserContext.get('catalogLocale');
 
                     field.setContext({
+                        entity: this.getFormData(),
                         locale,
                         scope: scope.code,
                         scopeLabel: i18n.getLabel(scope.labels, locale, scope.code),
@@ -291,8 +304,8 @@ define(
                 var fields = FieldManager.getFields();
 
                 Dialog.confirm(
-                    __('pim_enrich.confirmation.delete.attribute'),
-                    __('pim_enrich.confirmation.delete_item'),
+                    __('pim_enrich.entity.attribute.module.delete.confirm_from_product'),
+                    __('pim_common.confirm_deletion'),
                     function () {
                         FetcherRegistry.getFetcher('attribute').fetch(attributeCode).then(function (attribute) {
                             $.ajax({
@@ -513,12 +526,19 @@ define(
             },
 
             /**
-             * Clear the fill field provider on product fetch
+             * Make the header and section header sticky
              */
-            clearFillFieldProvider: function () {
-                toFillFieldProvider.clear();
+            sticky: function () {
+                const makeItSticky = (position) => (element) => {
+                    element.style.position = 'sticky';
+                    element.style.top = `${position}px`;
+                };
 
-                this.getRoot().trigger('pim_enrich:form:to-fill:cleared')
+                const header = this.getZone('header');
+                makeItSticky(this.getRoot().headerSize())(header);
+
+                const sectionTitles = this.el.querySelectorAll('.AknSubsection-title');
+                _.each(sectionTitles, makeItSticky(header.offsetHeight + this.getRoot().headerSize()));
             }
         });
     }

@@ -4,26 +4,23 @@ declare(strict_types=1);
 
 namespace Pim\Bundle\EnrichBundle\Connector\Reader\MassEdit;
 
-use Akeneo\Component\Batch\Item\DataInvalidItem;
-use Akeneo\Component\Batch\Item\InitializableInterface;
-use Akeneo\Component\Batch\Item\ItemReaderInterface;
-use Akeneo\Component\Batch\Model\StepExecution;
-use Akeneo\Component\Batch\Step\StepExecutionAwareInterface;
-use Akeneo\Component\StorageUtils\Cursor\CursorInterface;
-use Pim\Component\Catalog\Converter\MetricConverter;
-use Pim\Component\Catalog\Exception\ObjectNotFoundException;
-use Pim\Component\Catalog\Manager\CompletenessManager;
-use Pim\Component\Catalog\Model\ChannelInterface;
-use Pim\Component\Catalog\Model\ProductInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Query\ProductQueryBuilderFactoryInterface;
-use Pim\Component\Catalog\Repository\ChannelRepositoryInterface;
+use Akeneo\Channel\Component\Model\ChannelInterface;
+use Akeneo\Channel\Component\Repository\ChannelRepositoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Converter\MetricConverter;
+use Akeneo\Pim\Enrichment\Component\Product\Exception\ObjectNotFoundException;
+use Akeneo\Pim\Enrichment\Component\Product\Manager\CompletenessManager;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Query\ProductQueryBuilderFactoryInterface;
+use Akeneo\Tool\Component\Batch\Item\DataInvalidItem;
+use Akeneo\Tool\Component\Batch\Item\InitializableInterface;
+use Akeneo\Tool\Component\Batch\Item\ItemReaderInterface;
+use Akeneo\Tool\Component\Batch\Model\StepExecution;
+use Akeneo\Tool\Component\Batch\Step\StepExecutionAwareInterface;
+use Akeneo\Tool\Component\StorageUtils\Cursor\CursorInterface;
 
 /**
  * Product reader that only returns product entities and skips product models.
- *
- * TODO: This class is unused for now (replaced by both FilteredProductReader and FilteredProductModelReader).
- * This class has to be used for mass actions PIM-6357 after removing the skip part.
  *
  * @author    Samir Boulil <samir.boulil@akeneo.com>
  * @copyright 2017 Akeneo SAS (http://www.akeneo.com)
@@ -49,11 +46,17 @@ class FilteredProductAndProductModelReader implements
     /** @var bool */
     private $generateCompleteness;
 
+    /** @var bool */
+    private $readChildren;
+
     /** @var StepExecution */
     private $stepExecution;
 
     /** @var CursorInterface */
     private $productsAndProductModels;
+
+    /** @var bool */
+    private $firstRead = true;
 
     /**
      * @param ProductQueryBuilderFactoryInterface $pqbFactory
@@ -61,19 +64,22 @@ class FilteredProductAndProductModelReader implements
      * @param CompletenessManager                 $completenessManager
      * @param MetricConverter                     $metricConverter
      * @param bool                                $generateCompleteness
+     * @param bool                                $readChildren
      */
     public function __construct(
         ProductQueryBuilderFactoryInterface $pqbFactory,
         ChannelRepositoryInterface $channelRepository,
         CompletenessManager $completenessManager,
         MetricConverter $metricConverter,
-        $generateCompleteness
+        bool $generateCompleteness,
+        bool $readChildren
     ) {
         $this->pqbFactory = $pqbFactory;
         $this->channelRepository = $channelRepository;
         $this->completenessManager = $completenessManager;
         $this->metricConverter = $metricConverter;
-        $this->generateCompleteness = (bool) $generateCompleteness;
+        $this->generateCompleteness = $generateCompleteness;
+        $this->readChildren = $readChildren;
     }
 
     /**
@@ -81,6 +87,8 @@ class FilteredProductAndProductModelReader implements
      */
     public function initialize(): void
     {
+        $this->firstRead = true;
+
         $channel = $this->getConfiguredChannel();
         if (null !== $channel && $this->generateCompleteness) {
             $this->completenessManager->generateMissingForChannel($channel);
@@ -154,6 +162,16 @@ class FilteredProductAndProductModelReader implements
             $filters = $filters['data'];
         }
 
+        if ($this->readChildren) {
+            $filters = array_map(function ($filter) {
+                if ('id' === $filter['field']) {
+                    $filter['field'] = 'self_and_ancestor.id';
+                }
+
+                return $filter;
+            }, $filters);
+        }
+
         return array_filter($filters, function ($filter) {
             return count($filter) > 0;
         });
@@ -188,20 +206,26 @@ class FilteredProductAndProductModelReader implements
         $entity = null;
 
         while ($this->productsAndProductModels->valid()) {
-            $entity = $this->productsAndProductModels->current();
+            if (!$this->firstRead) {
+                $this->productsAndProductModels->next();
+            }
 
-            $this->productsAndProductModels->next();
+            $this->firstRead = false;
+            $entity = $this->productsAndProductModels->current();
+            if (false === $entity) {
+                return null;
+            }
 
             if ($entity instanceof ProductModelInterface) {
                 if ($this->stepExecution) {
-                    $this->stepExecution->incrementSummaryInfo('skip');
-
-                    $warning = 'Bulk actions do not support Product models entities yet.';
-                    $this->stepExecution->addWarning(
-                        $warning,
-                        [],
-                        new DataInvalidItem(['code' => $entity->getCode()])
-                    );
+                    if (!$this->readChildren) {
+                        $warning = 'This bulk action doesn\'t support Product models entities yet.';
+                        $this->stepExecution->addWarning(
+                            $warning,
+                            [],
+                            new DataInvalidItem(['code' => $entity->getCode()])
+                        );
+                    }
                 }
 
                 $entity = null;

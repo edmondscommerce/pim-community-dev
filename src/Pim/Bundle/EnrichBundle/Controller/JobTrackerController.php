@@ -2,13 +2,13 @@
 
 namespace Pim\Bundle\EnrichBundle\Controller;
 
-use Akeneo\Bundle\BatchQueueBundle\Manager\JobExecutionManager;
-use Akeneo\Component\Batch\Model\JobExecution;
-use Akeneo\Component\FileStorage\StreamedFileResponse;
+use Akeneo\Platform\Bundle\ImportExportBundle\Event\JobExecutionEvents;
+use Akeneo\Tool\Bundle\BatchQueueBundle\Manager\JobExecutionManager;
+use Akeneo\Tool\Bundle\ConnectorBundle\EventListener\JobExecutionArchivist;
+use Akeneo\Tool\Component\Batch\Model\JobExecution;
+use Akeneo\Tool\Component\FileStorage\StreamedFileResponse;
 use Oro\Bundle\SecurityBundle\SecurityFacade;
-use Pim\Bundle\ConnectorBundle\EventListener\JobExecutionArchivist;
 use Pim\Bundle\EnrichBundle\Doctrine\ORM\Repository\JobExecutionRepository;
-use Pim\Bundle\ImportExportBundle\Event\JobExecutionEvents;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Bundle\FrameworkBundle\Templating\EngineInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -108,7 +108,7 @@ class JobTrackerController extends Controller
         $jobExecution = $this->jobExecutionRepo->find($id);
 
         if (null === $jobExecution) {
-            throw new NotFoundHttpException('Akeneo\Component\Batch\Model\JobExecution entity not found');
+            throw new NotFoundHttpException('Akeneo\Tool\Component\Batch\Model\JobExecution entity not found');
         }
 
         if (!$this->isJobGranted($jobExecution)) {
@@ -165,7 +165,7 @@ class JobTrackerController extends Controller
         $jobExecution = $this->jobExecutionRepo->find($id);
 
         if (null === $jobExecution) {
-            throw new NotFoundHttpException('Akeneo\Component\Batch\Model\JobExecution entity not found');
+            throw new NotFoundHttpException('Akeneo\Tool\Component\Batch\Model\JobExecution entity not found');
         }
 
         if (!$this->isJobGranted($jobExecution)) {
@@ -194,7 +194,7 @@ class JobTrackerController extends Controller
         $jobExecution = $this->jobExecutionRepo->find($id);
 
         if (null === $jobExecution) {
-            throw new NotFoundHttpException('Akeneo\Component\Batch\Model\JobExecution entity not found');
+            throw new NotFoundHttpException('Akeneo\Tool\Component\Batch\Model\JobExecution entity not found');
         }
 
         if (!$this->isJobGranted($jobExecution)) {

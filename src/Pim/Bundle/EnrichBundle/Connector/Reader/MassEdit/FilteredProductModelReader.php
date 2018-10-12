@@ -4,18 +4,17 @@ declare(strict_types=1);
 
 namespace Pim\Bundle\EnrichBundle\Connector\Reader\MassEdit;
 
-use Akeneo\Component\Batch\Item\InitializableInterface;
-use Akeneo\Component\Batch\Item\ItemReaderInterface;
-use Akeneo\Component\Batch\Model\StepExecution;
-use Akeneo\Component\Batch\Step\StepExecutionAwareInterface;
-use Akeneo\Component\StorageUtils\Cursor\CursorInterface;
-use Pim\Component\Catalog\Converter\MetricConverter;
-use Pim\Component\Catalog\Exception\ObjectNotFoundException;
-use Pim\Component\Catalog\Manager\CompletenessManager;
-use Pim\Component\Catalog\Model\ChannelInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Query\ProductQueryBuilderFactoryInterface;
-use Pim\Component\Catalog\Repository\ChannelRepositoryInterface;
+use Akeneo\Channel\Component\Model\ChannelInterface;
+use Akeneo\Channel\Component\Repository\ChannelRepositoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Converter\MetricConverter;
+use Akeneo\Pim\Enrichment\Component\Product\Exception\ObjectNotFoundException;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Query\ProductQueryBuilderFactoryInterface;
+use Akeneo\Tool\Component\Batch\Item\InitializableInterface;
+use Akeneo\Tool\Component\Batch\Item\ItemReaderInterface;
+use Akeneo\Tool\Component\Batch\Model\StepExecution;
+use Akeneo\Tool\Component\Batch\Step\StepExecutionAwareInterface;
+use Akeneo\Tool\Component\StorageUtils\Cursor\CursorInterface;
 
 /**
  * Product reader that only returns product model entities and skips simple products.
@@ -44,6 +43,9 @@ class FilteredProductModelReader implements
     /** @var CursorInterface */
     private $productsAndProductModels;
 
+    /** @var bool */
+    private $firstRead = true;
+
     /**
      * @param ProductQueryBuilderFactoryInterface $pqbFactory
      * @param ChannelRepositoryInterface          $channelRepository
@@ -64,6 +66,8 @@ class FilteredProductModelReader implements
      */
     public function initialize(): void
     {
+        $this->firstRead = true;
+
         $channel = $this->getConfiguredChannel();
         $filters = $this->getConfiguredFilters();
         $this->productsAndProductModels = $this->getProductModelsCursor($filters, $channel);
@@ -145,6 +149,11 @@ class FilteredProductModelReader implements
      */
     private function getProductModelsCursor(array $filters, ChannelInterface $channel = null): CursorInterface
     {
+        $filters[] = [
+            'field' => 'entity_type',
+            'operator' => '=',
+            'value' => ProductModelInterface::class,
+        ];
         $options = ['filters' => $filters];
         if (null !== $channel) {
             $options['default_scope'] = $channel->getCode();
@@ -164,24 +173,18 @@ class FilteredProductModelReader implements
     {
         $entity = null;
 
-        while ($this->productsAndProductModels->valid()) {
-            $entity = $this->productsAndProductModels->current();
-
-            $this->productsAndProductModels->next();
-
-            $this->stepExecution->incrementSummaryInfo('read');
-
-            if (!$entity instanceof ProductModelInterface) {
-                if ($this->stepExecution) {
-                    $this->stepExecution->incrementSummaryInfo('skip');
-                }
-
-                $entity = null;
-                continue;
+        if ($this->productsAndProductModels->valid()) {
+            if (!$this->firstRead) {
+                $this->productsAndProductModels->next();
             }
 
-            break;
+            $entity = $this->productsAndProductModels->current();
+            if (false === $entity) {
+                return null;
+            }
+            $this->stepExecution->incrementSummaryInfo('read');
         }
+        $this->firstRead = false;
 
         return $entity;
     }

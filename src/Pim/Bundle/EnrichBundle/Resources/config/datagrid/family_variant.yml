@@ -2,6 +2,8 @@ datagrid:
     family-variant-grid:
         options:
             entityHint: family_variant
+            requireJSModules:
+                - oro/datagrid/pagination-input
             locale_parameter: localeCode
             manageFilters: false
         source:
@@ -21,16 +23,28 @@ datagrid:
             id: ~
             familyVariantCode: ~
             familyCode: ~
+            delete_link:
+                type: url
+                route: pim_enrich_family_variant_rest_remove
+                params:
+                    - familyVariantCode
         actions:
             edit:
                 launcherOptions:
                     className: AknIconButton AknIconButton--small AknIconButton--edit
                 type:         edit-in-modal
-                label:        Edit family variant
+                label:        pim_common.edit
                 propertyCode: familyVariantCode
                 fetcher:      family-variant
-                form:         pim-family-variant-edit-form
                 rowAction:    true
+                acl_resource: pim_enrich_family_edit_variants
+            delete:
+                launcherOptions:
+                    className: AknIconButton AknIconButton--small AknIconButton--trash
+                type:  delete
+                label: pim_common.delete
+                link:  delete_link
+                acl_resource: pim_enrich_family_variant_remove
         filters:
             columns:
                 label:

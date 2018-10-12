@@ -1,3 +1,196 @@
+# 1.7.x
+
+# 1.7.32 (2018-09-07)
+
+## Improvements
+
+- PIM-7614: Reduce SQL queries and loading time on the product edit form
+
+## BC Breaks
+- PIM-7614: New method getPresenterByAttributeType() on PresenterRegistryInterface
+
+# 1.7.31 (2018-08-22)
+
+# 1.7.30 (2018-08-14)
+
+- PIM-7570: Adds 'Locale specific' fields in attribute versioning
+
+# 1.7.29 (2018-08-01)
+
+## Bug fixes
+
+- PIM-7538: Fix persistent grid filters
+- GITHUB-8418: Cast entity id for comparison with MongoObject
+
+# 1.7.28 (2018-07-26)
+
+## Bug fixes
+
+- PIM-7453: Forbid to remove a role if user won't have role after deletion
+- PIM-7532: Improve the standard format for products associated to avoid performance impact
+- PIM-7540: Fix translations of boolean attributes
+
+# 1.7.27 (2018-07-24)
+
+## Bug fixes
+
+- GITHUB-8521: Update reference data configuration following the PIM-7456
+
+# 1.7.26 (2018-07-23)
+
+## Bug fixes
+
+- PIM-7429: Fix category tab in product edit form
+- PIM-7523: Fix accessibility for boolean switches
+- PIM-7473: Enables cache to avoid reloading validation mapping files
+- PIM-7459: Fix completeness performances issues with high number of locales on MongoDB
+- PIM-7525: Add loading mask to avoid multiple import launches
+- PIM-7456: Security vulnerabilities in dependencies.
+
+## BC breaks:
+
+### AppKernel
+
+- Remove `Pim\Bundle\JsFormValidationBundle\PimJsFormValidationBundle` and `APY\JsFormValidationBundle\APYJsFormValidationBundle`
+
+### Routing
+
+- Remove routing from `APYJsFormValidationBundle`
+
+# 1.7.25 (2018-07-06)
+
+## Bug fixes
+
+- PIM-7466: do not escape quotes for translation
+- PIM-7474: Show job name label in job profile header
+
+# 1.7.24 (2018-07-05)
+
+## Bug fixes
+
+- PIM-7461: Allow to avoid type check on category filter
+- PIM-7366: Fix performance issue related to reloading of selected category children ids on the grid
+- PIM-7373: Fix deletion and reinsertion of all attributes relations at family save time
+- PIM-7474: Show job profile label instead of code in the headers
+- PIM-7466: do not escape quotes for translation
+- PIM-7470: reduce loading time for family selects
+- PIM-7475: Add family to Families edit history
+
+# 1.7.23 (2018-06-25)
+
+## Bug fixes
+
+- PIM-7400: Fix 'ensure-indexes' timeout command
+- PIM-7456: Security vulnerabilities in dependencies
+
+# 1.7.22 (2018-06-05)
+
+## Bug fixes
+
+- PIM-7336: Fix channel update with "do not convert" values for conversion units
+- PIM-7385: Fix memory leak on purge job command
+- PIM-7375: Fix metric unit values on export/import with empty values
+- PIM-7370: disable multisorting on group/user and role/user grid for a better sort experience
+- PIM-7394: add slash as an allowed character for the identifier of a product in the API
+
+# 1.7.21 (2018-04-23)
+
+## Bug fixes
+
+- GITHUB-7750: Fix the fatal error when having violations during a bulk action on families (Thanks [FabienSalles](https://github.com/FabienSalles)!)
+- PIM-7279: Fix XSS issue on history grid
+- SDS-3172: Fix ObjectDetacher::detach() for MongoODM storage
+
+# 1.7.20 (2018-04-03)
+
+## Bug fixes
+
+- PIM-6825: Fix cancel button redirection when editing a user
+- GITHUB-7507: Fix XLSX product export to allow decimal separator configuration (Thanks [wa-daniel-fahl](https://github.com/wa-daniel-fahl)!)
+- PIM-7069: Fix Channel export regarding conversion_units output
+- PIM-7119: Fix missing translation on filters
+- PIM-7264: Fix validation on import decimal number greater than limit in database (MySQL)
+- PIM-7162: Fix issue with CSS on reset password form
+- PIM-7239: Change batch size of jobs and add a parameter to edit it
+- GITHUB-7203: Fix comparators not ordered by priority (Thanks [Bogdan Ghitulescu](https://github.com/bghitulescu)!)
+
+# 1.7.19 (2018-02-27)
+
+## Improvements
+
+- IM-824: Change message when the user or email is not valid to a more generic message
+- PIM-7253: Do not schedule mongo queries to update normalizedData for newly created entities
+
+## Bug Fixes
+
+- PIM-7188: Avoid duplicate products during import
+- PIM-7164: Fix a memory leak on product export caused by associated products not being detached
+- PIM-7134: Fix a memory leak when purging version history (MongoDB)
+
+# 1.7.18 (2018-02-22)
+
+# 1.7.17 (2018-02-01)
+
+## Bug Fixes
+
+- PIM-7130: Fix product update when association type code is an integer
+
+# 1.7.16 (2018-01-11)
+
+## Bug Fixes
+
+- PIM-7347: Fix the edit form of multi-select attributes with a lot of options
+- PIM-7031: Removes 'required' label for product grid filters on user creation
+- PIM-7064: Keep family attribute panel state on edit
+
+## BC-break:
+
+- Remove class `Pim\Bundle\EnrichBundle\Form\Type\AttributeProperty\OptionsType` and service `pim_enrich.form.type.options`
+
+# 1.7.15 (2017-12-18)
+
+- GITHUB-7202: Ensure commit batch size value is always an int, cheers @bghitulescu!
+- PIM-7017: Permission on "Add attribute to a product" is not properly applied
+- PIM-7054: Optimize completeness generator
+
+# 1.7.14 (2017-11-21)
+
+## Bug Fixes
+
+- PIM-6995: fix memory leak in the MongoDB product association import (it bypasses a Doctrine bug about the detach method).
+
+# 1.7.13 (2017-11-09)
+
+## Bug Fixes
+
+- PIM-6904: Product Grid - Horizontal scrollbar should be at the bottom of the screen instead to be at the end of the grid
+- PIM-6960: fix association type deletion when it's the first item of the list
+- API-216: add application/x-www-form-urlencoded as allowed Content-Type when getting a token with the API
+- GITHUB-6414: fix the deletion of a newly created import/export profile, cheers @latenzio!
+
+## Improvements
+
+- PIM-6973: Manage removed association types with `pim:mongodb:clean` command
+
+# 1.7.12 (2017-10-25)
+
+## Bug Fixes
+
+PIM-6939: fix sort order on export
+SDS-1772: Removes query cache use on PQB to avoid memory leak
+
+# 1.7.11 (2017-10-16)
+
+## Bug Fixes
+
+PIM-6901: Fix ACL with a new role when we want to edit users
+
+# 1.7.10 (2017-10-10)
+
+## Bug Fixes
+
+- PIM-6823: Add missing "decimal separator" field on xlsx profil import
+
 # 1.7.9 (2017-09-27)
 
 ## Bug Fixes

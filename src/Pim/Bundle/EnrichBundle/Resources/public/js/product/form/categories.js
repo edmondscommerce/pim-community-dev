@@ -81,7 +81,7 @@ define(
                 this.trigger('tab:register', {
                     code: (undefined === this.config.tabCode) ? this.code : this.config.tabCode,
                     isVisible: this.isVisible.bind(this),
-                    label: __('pim_enrich.form.product.tab.categories.title')
+                    label: __('pim_enrich.entity.category.plural_label')
                 });
 
                 this.listenTo(this.getRoot(), 'pim_enrich:form:locale_switcher:change', function (localeEvent) {
@@ -100,8 +100,10 @@ define(
                 this.loadTrees().done(function (trees) {
                     this.trees = trees;
 
-                    this.state.set('currentTree', _.first(this.trees).code);
-                    this.state.set('currentTreeId', _.first(this.trees).id);
+                    if (undefined === this.state.toJSON().currentTree) {
+                        this.state.set('currentTree', _.first(this.trees).code);
+                        this.state.set('currentTreeId', _.first(this.trees).id);
+                    }
 
                     this.$el.html(
                         this.template({

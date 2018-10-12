@@ -2,14 +2,16 @@
 
 namespace Pim\Bundle\EnrichBundle\Controller\Rest;
 
-use Akeneo\Component\StorageUtils\Updater\ObjectUpdaterInterface;
-use Pim\Bundle\UserBundle\Context\UserContext;
-use Pim\Component\Catalog\Builder\ProductBuilderInterface;
-use Pim\Component\Catalog\Localization\Localizer\AttributeConverterInterface;
-use Pim\Component\Catalog\Repository\AttributeRepositoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Builder\ProductBuilderInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Localization\Localizer\AttributeConverterInterface;
+use Akeneo\Pim\Structure\Component\Repository\AttributeRepositoryInterface;
+use Akeneo\Tool\Component\StorageUtils\Updater\ObjectUpdaterInterface;
+use Akeneo\UserManagement\Bundle\Context\UserContext;
 use Pim\Component\Enrich\Converter\ConverterInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -82,10 +84,14 @@ class ValuesController
      *
      * @param Request $request
      *
-     * @return JsonResponse
+     * @return Response
      */
     public function validateAction(Request $request)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         $data = json_decode($request->getContent(), true);
 
         $locale = $this->userContext->getUiLocale()->getCode();

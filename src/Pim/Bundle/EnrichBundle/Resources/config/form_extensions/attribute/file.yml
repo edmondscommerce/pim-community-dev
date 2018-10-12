@@ -4,6 +4,33 @@ extensions:
         config:
             template: pim/template/common/drop-zone
 
+    pim-attribute-file-form-properties-common-usable-as-grid-filter:
+        module: pim/form/common/fields/boolean
+        parent: pim-attribute-form-file
+        targetZone: content
+        position: 70
+        config:
+            fieldName: useable_as_grid_filter
+            label: pim_enrich.entity.attribute.property.useable_as_grid_filter
+
+    pim-attribute-edit-form-file-is-locale-specific:
+        module: pim/attribute-edit-form/properties/is-locale-specific
+        parent: pim-attribute-form-file
+        targetZone: content
+        position: 80
+        config:
+            fieldName: is_locale_specific
+            label: pim_enrich.entity.attribute.property.is_locale_specific
+
+    pim-attribute-edit-form-file-available-locales:
+        module: pim/attribute-edit-form/properties/available-locales
+        parent: pim-attribute-form-file
+        targetZone: content
+        position: 90
+        config:
+            fieldName: available_locales
+            label: pim_enrich.entity.attribute.property.available_locales
+
     pim-attribute-form-file-validation-params:
         module: pim/common/simple-view
         parent: pim-attribute-form-file
@@ -12,7 +39,7 @@ extensions:
         config:
             template: pim/template/form/tab/section
             templateParams:
-                sectionTitle: pim_enrich.form.attribute.tab.properties.section.validation
+                sectionTitle: pim_enrich.entity.attribute.module.edit.validation
                 dropZone: content
 
     pim-attribute-form-file-validation-params-max-file-size:
@@ -22,7 +49,7 @@ extensions:
         position: 100
         config:
             fieldName: max_file_size
-            label: pim_enrich.form.attribute.tab.properties.label.max_file_size
+            label: pim_enrich.entity.attribute.property.max_file_size
 
     pim-attribute-form-file-validation-params-allowed-extensions:
         module: pim/form/common/fields/select
@@ -31,7 +58,7 @@ extensions:
         position: 110
         config:
             fieldName: allowed_extensions
-            label: pim_enrich.form.attribute.tab.properties.label.allowed_extensions
+            label: pim_enrich.entity.attribute.property.allowed_extensions
             choices: '%pim_catalog_file_allowed_extensions%'
             isMultiple: true
             defaultValue: []

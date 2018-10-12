@@ -15,6 +15,13 @@ define(
             /**
              * {@inheritdoc}
              */
+            initialize: function (options) {
+                this.config = options.config;
+            },
+
+            /**
+             * {@inheritdoc}
+             */
             renderForm: function (route, path) {
                 var query = path.replace(route.route.tokens[0][1], '');
                 var parameters = _.chain(query.split('&'))
@@ -27,16 +34,16 @@ define(
                         };
                     }).value();
 
-                var itemsCount = _.find(parameters, function (parameter) {
-                    return 'itemsCount' === parameter.key;
-                }).value;
                 var actionName = _.find(parameters, function (parameter) {
                     return 'actionName' === parameter.key;
                 }).value.replace(new RegExp('_', 'g'), '-');
 
                 return $.ajax({
-                    url: Routing.generate('pim_enrich_mass_edit_rest_get_filter') + query
-                }).then((filters) => {
+                    url: Routing.generate(this.config.route) + query
+                }).then((response) => {
+                    const filters = response.filters;
+                    const itemsCount = response.itemsCount;
+
                     return FormBuilder.build('pim-mass-' + actionName).then((form) => {
                         form.setData({
                             filters: filters,

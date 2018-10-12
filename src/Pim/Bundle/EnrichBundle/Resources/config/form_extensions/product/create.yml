@@ -3,10 +3,10 @@ extensions:
        module: pim/form/common/creation/modal
        config:
            labels:
-               title: pim_enrich.entity.product.create_popin.title
-               subTitle: pim_menu.tab.products
+               title: pim_common.create
+               subTitle: pim_enrich.entity.product.plural_label
            picture: illustrations/Product.svg
-           successMessage: pim_enrich.entity.product.message.created
+           successMessage: pim_enrich.entity.product.flash.create.success
            editRoute: pim_enrich_product_edit
            postUrl: pim_enrich_product_rest_create
 
@@ -19,10 +19,11 @@ extensions:
             identifier: identifier
 
     pim-product-create-family:
-        module: pim/form/common/creation/family
+        module: pim/form/common/fields/simple-select-async
         parent: pim-product-create-modal
         targetZone: fields
         position: 20
         config:
-            identifier: family
-            loadUrl: pim_enrich_family_rest_index
+            fieldName: family
+            label: pim_enrich.entity.family.uppercase_label
+            choiceRoute: pim_enrich_family_rest_index

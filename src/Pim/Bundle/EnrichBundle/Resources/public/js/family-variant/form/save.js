@@ -18,7 +18,7 @@ define(
         'pim/field-manager',
         'pim/i18n',
         'pim/user-context',
-        'pim/security-context'
+        'oro/mediator'
     ],
     function (
         $,
@@ -29,11 +29,12 @@ define(
         FamilyVariantSaver,
         FieldManager,
         i18n,
-        UserContext
+        UserContext,
+        mediator
     ) {
         return BaseSave.extend({
-            updateSuccessMessage: __('pim_enrich.entity.family_variant.info.update_successful'),
-            updateFailureMessage: __('pim_enrich.entity.family_variant.info.update_failed'),
+            updateSuccessMessage: __('pim_enrich.entity.family_variant.flash.update.success'),
+            updateFailureMessage: __('pim_enrich.entity.family_variant.flash.update.fail'),
 
             /**
              * {@inheritdoc}
@@ -75,6 +76,7 @@ define(
                         this.setData(data);
                         this.getRoot().trigger('pim_enrich:form:entity:post_fetch', data);
                         this.getRoot().trigger('pim_enrich:form:entity:post_save', data);
+                        mediator.trigger('datagrid:doRefresh:family-variant-grid');
                     }.bind(this))
                     .fail(this.fail.bind(this))
                     .always(this.hideLoadingMask.bind(this));

@@ -8,8 +8,22 @@
  */
 
 define(
-    ['underscore', 'oro/translator', 'pim/form', 'pim/provider/to-fill-field-provider'],
-    function (_, __, BaseForm, toFillFieldProvider) {
+    [
+        'jquery',
+        'underscore',
+        'oro/translator',
+        'pim/form',
+        'pim/provider/to-fill-field-provider',
+        'pim/user-context'
+    ],
+    function (
+        $,
+        _,
+        __,
+        BaseForm,
+        toFillFieldProvider,
+        UserContext
+    ) {
         return BaseForm.extend({
             /**
              * @returns {String}
@@ -22,7 +36,14 @@ define(
              * @returns {String}
              */
             getLabel() {
-                return __('pim_enrich.form.product.tab.attributes.attribute_filter.missing_required');
+                return __('pim_enrich.entity.product.module.attribute_filter.missing_required');
+            },
+
+            /**
+             * @returns {Boolean}
+             */
+            isVisible() {
+                return true;
             },
 
             /**
@@ -31,8 +52,13 @@ define(
              * @returns {Promise}
              */
             filterValues(values) {
-                return toFillFieldProvider.getFields(this.getRoot(), values)
-                    .then(fieldCodes => _.pick(values, fieldCodes));
+                const scope = UserContext.get('catalogScope');
+                const locale = UserContext.get('catalogLocale');
+
+                const fieldsToFill = toFillFieldProvider.getMissingRequiredFields(this.getFormData(), scope, locale);
+                const valuesToFill = _.pick(values, fieldsToFill);
+
+                return $.Deferred().resolve(valuesToFill).promise();
             }
         });
     }

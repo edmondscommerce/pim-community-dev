@@ -102,10 +102,13 @@ define(
              */
             render: function () {
                 $.when(
-                    toFillFieldProvider.getFields(this.getRoot(), this.getFormData().values),
                     AttributeGroupManager.getAttributeGroupsForObject(this.getFormData())
-                ).then(function (attributes, attributeGroups) {
-                    var toFillAttributeGroups = _.uniq(_.map(attributes, function (attribute) {
+                ).then(function (attributeGroups) {
+                    const scope = UserContext.get('catalogScope');
+                    const locale = UserContext.get('catalogLocale');
+                    const attributes = toFillFieldProvider.getMissingRequiredFields(this.getFormData(), scope, locale);
+
+                    const toFillAttributeGroups = _.uniq(_.map(attributes, function (attribute) {
                         return AttributeGroupManager.getAttributeGroupForAttribute(
                             attributeGroups,
                             attribute
@@ -113,17 +116,19 @@ define(
                     }));
 
                     this.$el.empty();
-                    if (!_.isEmpty(this.getElements())) {
+                    if (this.shouldBeDisplayed(this.getElements())) {
                         this.$el.html(this.template({
                             current: this.getCurrent(),
-                            elements: _.sortBy(this.getElements(), 'sort_order'),
+                            elements: _.sortBy(this.getElements(), function(attributeGroup) {
+                                return [attributeGroup.sort_order, attributeGroup.code].join('_');
+                            }),
                             badges: this.badges,
                             locale: UserContext.get('catalogLocale'),
                             toFillAttributeGroups: toFillAttributeGroups,
                             allAttributeCode: this.all.code,
                             currentElement: _.findWhere(this.getElements(), {code: this.getCurrent()}),
                             i18n: i18n,
-                            label: __('pim_enrich.form.product.tab.attributes.attribute_group_selector')
+                            label: __('pim_enrich.entity.attribute_group.uppercase_label')
                         }));
                     }
 
@@ -131,6 +136,19 @@ define(
                 }.bind(this));
 
                 return this;
+            },
+
+            /**
+             * Don't display the dropdown if there is no elements or if the only element is the "All" group.
+             *
+             * @param {Object} elements
+             *
+             * @returns {Boolean}
+             */
+            shouldBeDisplayed: function (elements) {
+                const length = Object.keys(elements).length;
+
+                return length > 1 || (1 === length && this.all.code !== Object.values(elements)[0].code);
             },
 
             /**

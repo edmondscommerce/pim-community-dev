@@ -1,7 +1,8 @@
 {
   "parser": "babel-eslint",
   "env": {
-    "browser": true
+    "browser": true,
+    "jasmine": true
   },
   "globals": {
     "Translator": true,
@@ -11,7 +12,10 @@
     "__dirname": true,
     "__moduleConfig": true,
     "__contextPlaceholder": true,
-    "__contextPaths": true
+    "__contextPaths": true,
+    "process": true,
+    "Promise": true,
+    "global": true
   },
   "rules": {
     "space-infix-ops": 2,
@@ -26,13 +30,13 @@
       1,
       4,
       {
-        "ArrayExpression": "first",
+        "ArrayExpression": "first"
       }
     ],
     "no-use-before-define": 0,
     "newline-before-return": 2,
     "new-cap": [
-      1,
+      0,
       {
         "properties": false
       }
@@ -62,13 +66,6 @@
       2,
       "never"
     ],
-    # "key-spacing": [
-    #   2,
-    #   {
-    #     "beforeColon": false,
-    #     "afterColon": true
-    #   }
-    # ],
     "space-unary-ops": [
       2,
       {
@@ -85,10 +82,6 @@
     ],
     "no-mixed-spaces-and-tabs": 2,
     "no-trailing-spaces": 2,
-    "comma-dangle": [
-      2,
-      "never"
-    ],
     "no-with": 2,
     "brace-style": [
       2,
@@ -111,13 +104,13 @@
       2,
       "last"
     ],
-    'comma-spacing': ['error', {
-      'before': false,
-      'after': true
+    "comma-spacing": ["error", {
+      "before": false,
+      "after": true
     }],
-    'semi-spacing': ['error', {
-      'before': false,
-      'after': true
+    "semi-spacing": ["error", {
+      "before": false,
+      "after": true
     }],
     "eol-last": 2,
     "dot-notation": 2,

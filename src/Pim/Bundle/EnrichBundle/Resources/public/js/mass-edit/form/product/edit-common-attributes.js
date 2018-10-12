@@ -11,24 +11,28 @@ define(
         'jquery',
         'underscore',
         'oro/translator',
+        'oro/messenger',
         'routing',
         'pim/mass-edit-form/product/operation',
         'pim/user-context',
         'pim/form-builder',
         'pim/fetcher-registry',
         'pim/i18n',
+        'pim/common/property',
         'pim/template/mass-edit/product/edit-common-attributes'
     ],
     function (
         $,
         _,
         __,
+        messenger,
         Routing,
         BaseOperation,
         UserContext,
         FormBuilder,
         FetcherRegistry,
         i18n,
+        propertyAccessor,
         template
     ) {
         return BaseOperation.extend({
@@ -70,7 +74,7 @@ define(
                 };
 
                 if (!this.formPromise) {
-                    this.formPromise = FormBuilder.build('pim-mass-product-edit-form').then(function (form) {
+                    this.formPromise = FormBuilder.build(this.config.innerForm).then(function (form) {
                         form.setData(product);
                         form.trigger('pim_enrich:form:entity:post_fetch', product);
                         this.listenTo(form, 'pim_enrich:mass_edit:model_updated', this.updateModel);
@@ -87,7 +91,11 @@ define(
                     // This method renders a complete PEF page, we need to remove useless elements manually.
                     this.$el.find('.navigation').remove();
                     this.$el.find('.AknDefault-thirdColumnContainer').remove();
-                    this.$el.find('.AknDefault-mainContent').addClass('AknDefault-mainContent--withoutPadding');
+
+                    this.$el.find('.AknDefault-mainContent')
+                        .addClass('AknDefault-mainContent--withoutPadding')
+                        .css({'overflow-x': 'hidden'})
+                    ;
 
                     if (this.errors) {
                         const event = {
@@ -159,22 +167,31 @@ define(
              * @return {Promise}
              */
             validate: function () {
-                return $.ajax({
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(this.getValue()),
-                    url: Routing.generate('pim_enrich_value_rest_validate')
-                }).then(function (response) {
-                    if (!_.isEmpty(response.values)) {
-                        this.errors = response.values;
+                const data = this.getFormData();
+                const actions = propertyAccessor.accessProperty(data, 'actions.0.normalized_values', {});
 
-                        this.render();
-                    } else {
-                        this.errors = {};
-                    }
+                if (0 === Object.keys(actions).length) {
+                    messenger.notify('error', __('pim_enrich.mass_edit.product.operation.edit_common.no_update'));
 
-                    return _.isEmpty(this.errors);
-                }.bind(this));
+                    return $.Deferred().resolve(false);
+                } else {
+                    return $.ajax({
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(this.getValue()),
+                        url: Routing.generate('pim_enrich_value_rest_validate')
+                    }).then(function (response) {
+                        if (!_.isEmpty(response.values)) {
+                            this.errors = response.values;
+
+                            this.render();
+                        } else {
+                            this.errors = {};
+                        }
+
+                        return _.isEmpty(this.errors);
+                    }.bind(this));
+                }
             }
         });
     }

@@ -2,10 +2,12 @@
 
 namespace Pim\Bundle\EnrichBundle\Normalizer;
 
-use Akeneo\Component\Localization\Presenter\PresenterInterface;
-use Akeneo\Component\Versioning\Model\Version;
-use Oro\Bundle\UserBundle\Entity\UserManager;
-use Pim\Component\Catalog\Localization\Presenter\PresenterRegistryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Localization\Presenter\PresenterRegistryInterface;
+use Akeneo\Pim\Structure\Component\Repository\AttributeRepositoryInterface;
+use Akeneo\Tool\Component\Localization\Presenter\PresenterInterface;
+use Akeneo\Tool\Component\Versioning\Model\Version;
+use Akeneo\UserManagement\Bundle\Context\UserContext;
+use Akeneo\UserManagement\Bundle\Manager\UserManager;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Translation\TranslatorInterface;
 
@@ -36,22 +38,36 @@ class VersionNormalizer implements NormalizerInterface
     /** @var PresenterInterface */
     protected $datetimePresenter;
 
+    /** @var AttributeRepositoryInterface */
+    protected $attributeRepository;
+
+    /** @var UserContext */
+    protected $userContext;
+
+    const ATTRIBUTE_HEADER_SEPARATOR = "-";
+
     /**
-     * @param UserManager                $userManager
-     * @param TranslatorInterface        $translator
-     * @param PresenterInterface         $datetimePresenter
-     * @param PresenterRegistryInterface $presenterRegistry
+     * @param UserManager                  $userManager
+     * @param TranslatorInterface          $translator
+     * @param PresenterInterface           $datetimePresenter
+     * @param PresenterRegistryInterface   $presenterRegistry
+     * @param AttributeRepositoryInterface $attributeRepository
+     * @param UserContext                  $userContext
      */
     public function __construct(
         UserManager $userManager,
         TranslatorInterface $translator,
         PresenterInterface $datetimePresenter,
-        PresenterRegistryInterface $presenterRegistry
+        PresenterRegistryInterface $presenterRegistry,
+        AttributeRepositoryInterface $attributeRepository,
+        UserContext $userContext
     ) {
         $this->userManager = $userManager;
         $this->translator = $translator;
         $this->datetimePresenter = $datetimePresenter;
         $this->presenterRegistry = $presenterRegistry;
+        $this->attributeRepository = $attributeRepository;
+        $this->userContext = $userContext;
     }
 
     /**
@@ -59,7 +75,14 @@ class VersionNormalizer implements NormalizerInterface
      */
     public function normalize($version, $format = null, array $context = [])
     {
-        $context = ['locale' => $this->translator->getLocale()];
+        $context = array_merge($context, ['locale' => $this->translator->getLocale()]);
+
+        try {
+            $timezone = $this->userContext->getUserTimezone();
+            $loggedAtContext = array_merge($context, ['timezone' => $timezone]);
+        } catch (\RuntimeException $exception) {
+            $loggedAtContext = $context;
+        }
 
         return [
             'id'           => $version->getId(),
@@ -69,7 +92,7 @@ class VersionNormalizer implements NormalizerInterface
             'changeset'    => $this->convertChangeset($version->getChangeset(), $context),
             'context'      => $version->getContext(),
             'version'      => $version->getVersion(),
-            'logged_at'    => $this->datetimePresenter->present($version->getLoggedAt(), $context),
+            'logged_at'    => $this->datetimePresenter->present($version->getLoggedAt(), $loggedAtContext),
             'pending'      => $version->isPending(),
         ];
     }
@@ -93,7 +116,7 @@ class VersionNormalizer implements NormalizerInterface
             $user = $this->userManager->findUserByUsername($author);
 
             if (null === $user) {
-                $userName = sprintf('%s - %s', $author, $this->translator->trans('Removed user'));
+                $userName = sprintf('%s - %s', $author, $this->translator->trans('pim_user.user.removed_user'));
             } else {
                 $userName = sprintf('%s %s', $user->getFirstName(), $user->getLastName());
             }
@@ -114,21 +137,43 @@ class VersionNormalizer implements NormalizerInterface
      */
     protected function convertChangeset(array $changeset, array $context)
     {
-        foreach ($changeset as $attribute => $changes) {
-            $context['versioned_attribute'] = $attribute;
-            $attributeName = $attribute;
-            if (preg_match('/^(?<attribute>[a-zA-Z0-9_]+)-.+$/', $attribute, $matches)) {
-                $attributeName = $matches['attribute'];
-            }
+        $attributeCodes = [];
+        foreach (array_keys($changeset) as $valueHeader) {
+            $attributeCode = $this->extractAttributeCode($valueHeader);
 
-            $presenter = $this->presenterRegistry->getPresenterByAttributeCode($attributeName);
-            if (null !== $presenter) {
-                foreach ($changes as $key => $value) {
-                    $changeset[$attribute][$key] = $presenter->present($value, $context);
+            $attributeCodes[$attributeCode] = true;
+        }
+
+        $attributeTypes = $this->attributeRepository->getAttributeTypeByCodes(array_keys($attributeCodes));
+
+        foreach ($changeset as $valueHeader => $valueChanges) {
+            $context['versioned_attribute'] = $valueHeader;
+            $attributeCode = $this->extractAttributeCode($valueHeader);
+
+            if (isset($attributeTypes[$attributeCode])) {
+                $presenter = $this->presenterRegistry->getPresenterByAttributeType($attributeTypes[$attributeCode]);
+                if (null !== $presenter) {
+                    foreach ($valueChanges as $key => $value) {
+                        $changeset[$valueHeader][$key] = $presenter->present($value, $context);
+                    }
                 }
             }
         }
 
         return $changeset;
+    }
+
+    /**
+     * Extract the attribute code from the versioning value header.
+     * For example, in "price-EUR", the attribute code is "price".
+     * For "desc-ecom-en_US", this is "desc".
+     */
+    protected function extractAttributeCode($valueHeader)
+    {
+        if (($separatorPos = strpos($valueHeader, self::ATTRIBUTE_HEADER_SEPARATOR)) !== false) {
+            return substr($valueHeader, 0, $separatorPos);
+        } else {
+            return $valueHeader;
+        }
     }
 }

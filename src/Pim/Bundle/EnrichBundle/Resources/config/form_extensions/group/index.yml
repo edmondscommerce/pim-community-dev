@@ -24,7 +24,7 @@ extensions:
         parent: pim-group-index
         targetZone: title
         config:
-            title: pim_enrich.index.group.title
+            title: pim_enrich.entity.group.page_title.index
 
     pim-group-index-breadcrumbs:
         module: pim/common/breadcrumbs
@@ -48,6 +48,8 @@ extensions:
         module: oro/datagrid/pagination-input
         parent: pim-group-index-grid-container
         targetZone: toolbar
+        config:
+            gridName: group-grid
 
     pim-group-index-grid:
         module: pim/form/common/index/grid
@@ -64,5 +66,5 @@ extensions:
         aclResourceId: pim_enrich_group_create
         config:
            iconName:  plus
-           title:     pim_enrich.index.group.create_btn
+           title:     pim_enrich.entity.group.module.create.button
            modalForm: pim-group-create-modal

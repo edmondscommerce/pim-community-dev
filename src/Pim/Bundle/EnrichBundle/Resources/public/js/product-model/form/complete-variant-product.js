@@ -21,12 +21,13 @@ define(
         UserContext
     ) {
         return BaseForm.extend({
+            className: 'AknButtonList-item',
             template: _.template(template),
 
             /**
              * {@inheritdoc}
              */
-            initialize: function () {
+            configure: function () {
                 UserContext.off('change:catalogLocale change:catalogScope', this.render);
 
                 this.listenTo(UserContext, 'change:catalogLocale change:catalogScope', this.render);
@@ -54,10 +55,8 @@ define(
 
                 this.$el.html(
                     this.template({
-                        complete: completeProducts,
-                        total: totalProducts,
                         color: this.badgeCssClass(completeProducts, totalProducts),
-                        label: this.badgeLabel(completeProducts)
+                        label: this.badgeLabel(completeProducts, totalProducts)
                     })
                 );
             },
@@ -86,18 +85,17 @@ define(
             /**
              * Return the label of the badge
              *
-             * @param {object} completeProducts
+             * @param {int} completeProducts
+             * @param {int} totalProducts
              *
              * @returns {string}
              */
-            badgeLabel: function (completeProducts) {
-                let label = __('pim_enrich.form.product_model.complete_variant_product');
-
-                if (1 < completeProducts) {
-                    label = __('pim_enrich.form.product_model.complete_variant_products')
-                }
-
-                return label;
+            badgeLabel: function (completeProducts, totalProducts) {
+                return __(
+                    'pim_enrich.entity.product_model.module.completeness.variant_product',
+                    { complete: completeProducts, total: totalProducts },
+                    completeProducts
+                );
             }
         });
     }

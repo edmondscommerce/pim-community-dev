@@ -2,22 +2,29 @@
 
 namespace spec\Pim\Bundle\EnrichBundle\Normalizer;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use PhpSpec\ObjectBehavior;
+use Pim\Bundle\EnrichBundle\Normalizer\ImageNormalizer;
 use Pim\Bundle\EnrichBundle\Normalizer\VariantNavigationNormalizer;
 use Pim\Bundle\EnrichBundle\Provider\Form\FormProviderInterface;
-use Pim\Bundle\VersioningBundle\Manager\VersionManager;
-use Pim\Component\Catalog\FamilyVariant\EntityWithFamilyVariantAttributesProvider;
-use Pim\Component\Catalog\Localization\Localizer\AttributeConverterInterface;
-use Pim\Component\Catalog\Model\AttributeInterface;
-use Pim\Component\Catalog\Model\FamilyInterface;
-use Pim\Component\Catalog\Model\FamilyVariantInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Model\ValueInterface;
-use Pim\Component\Catalog\ProductModel\ImageAsLabel;
-use Pim\Component\Catalog\ProductModel\Query\VariantProductRatioInterface;
-use Pim\Component\Catalog\ProductModel\Query\CompleteVariantProducts;
-use Pim\Component\Catalog\Repository\LocaleRepositoryInterface;
-use Pim\Component\Catalog\ValuesFiller\EntityWithFamilyValuesFillerInterface;
+use Akeneo\UserManagement\Bundle\Context\UserContext;
+use Akeneo\Tool\Bundle\VersioningBundle\Manager\VersionManager;
+use Akeneo\Pim\Enrichment\Component\Product\Association\MissingAssociationAdder;
+use Akeneo\Pim\Enrichment\Component\Product\EntityWithFamilyVariant\EntityWithFamilyVariantAttributesProvider;
+use Akeneo\Pim\Enrichment\Component\Product\Localization\Localizer\AttributeConverterInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\AssociationInterface;
+use Akeneo\Pim\Structure\Component\Model\AssociationTypeInterface;
+use Akeneo\Pim\Structure\Component\Model\AttributeInterface;
+use Akeneo\Pim\Structure\Component\Model\FamilyInterface;
+use Akeneo\Pim\Structure\Component\Model\FamilyVariantInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\GroupInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ValueInterface;
+use Akeneo\Pim\Enrichment\Component\Product\ProductModel\ImageAsLabel;
+use Akeneo\Pim\Enrichment\Component\Product\ProductModel\Query\CompleteVariantProducts;
+use Akeneo\Pim\Enrichment\Component\Product\ProductModel\Query\VariantProductRatioInterface;
+use Akeneo\Channel\Component\Repository\LocaleRepositoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\ValuesFiller\EntityWithFamilyValuesFillerInterface;
 use Pim\Component\Enrich\Converter\ConverterInterface;
 use Pim\Component\Enrich\Query\AscendantCategoriesInterface;
 use Prophecy\Argument;
@@ -28,7 +35,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
     function let(
         NormalizerInterface $normalizer,
         NormalizerInterface $versionNormalizer,
-        NormalizerInterface $fileNormalizer,
+        ImageNormalizer $imageNormalizer,
         VersionManager $versionManager,
         AttributeConverterInterface $localizedConverter,
         ConverterInterface $productValueConverter,
@@ -40,13 +47,16 @@ class ProductModelNormalizerSpec extends ObjectBehavior
         VariantProductRatioInterface $findVariantProductCompleteness,
         ImageAsLabel $imageAsLabel,
         AscendantCategoriesInterface $ascendantCategories,
-        NormalizerInterface $incompleteValuesNormalizer
+        NormalizerInterface $incompleteValuesNormalizer,
+        UserContext $userContext,
+        MissingAssociationAdder $missingAssociationAdder,
+        NormalizerInterface $parentAssociationsNormalizer
     ) {
         $this->beConstructedWith(
             $normalizer,
             $versionNormalizer,
-            $fileNormalizer,
             $versionManager,
+            $imageNormalizer,
             $localizedConverter,
             $productValueConverter,
             $formProvider,
@@ -57,7 +67,10 @@ class ProductModelNormalizerSpec extends ObjectBehavior
             $findVariantProductCompleteness,
             $imageAsLabel,
             $ascendantCategories,
-            $incompleteValuesNormalizer
+            $incompleteValuesNormalizer,
+            $userContext,
+            $missingAssociationAdder,
+            $parentAssociationsNormalizer
         );
     }
 
@@ -69,7 +82,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
     function it_normalizes_product_models(
         $normalizer,
         $versionNormalizer,
-        $fileNormalizer,
+        $imageNormalizer,
         $versionManager,
         $localizedConverter,
         $productValueConverter,
@@ -81,16 +94,24 @@ class ProductModelNormalizerSpec extends ObjectBehavior
         $imageAsLabel,
         $ascendantCategories,
         $incompleteValuesNormalizer,
+        $userContext,
         AttributeInterface $pictureAttribute,
         ProductModelInterface $productModel,
         FamilyVariantInterface $familyVariant,
         FamilyInterface $family,
         ValueInterface $picture,
-        CompleteVariantProducts $completeVariantProducts
+        CompleteVariantProducts $completeVariantProducts,
+        AssociationInterface $association,
+        AssociationTypeInterface $associationType,
+        GroupInterface $group,
+        ArrayCollection $groups
     ) {
         $options = [
             'decimal_separator' => ',',
             'date_format'       => 'dd/MM/yyyy',
+            'locale'            => 'en_US',
+            'channel'           => 'mobile',
+            'timezone'          => 'Pacific/Kiritimati',
         ];
 
         $productModelNormalized = [
@@ -129,6 +150,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
             'picture'             => [['data' => 'a/b/c/my_picture.jpg', 'locale' => null, 'scope' => null]]
         ];
 
+        $userContext->getUserTimezone()->willReturn('Pacific/Kiritimati');
         $normalizer->normalize($productModel, 'standard', $options)->willReturn($productModelNormalized);
         $localizedConverter->convertToLocalizedFormats($productModelNormalized['values'], $options)->willReturn($valuesLocalized);
 
@@ -146,21 +168,22 @@ class ProductModelNormalizerSpec extends ObjectBehavior
         $pictureAttribute->getCode()->willReturn('picture');
 
         $localeRepository->getActivatedLocaleCodes()->willReturn(['en_US', 'fr_FR']);
-        $productModel->getLabel('en_US')->willReturn('Tshirt blue');
-        $productModel->getLabel('fr_FR')->willReturn('Tshirt bleu');
+        $productModel->getLabel('en_US', 'mobile')->willReturn('Tshirt blue');
+        $productModel->getLabel('fr_FR', 'mobile')->willReturn('Tshirt bleu');
 
         $imageAsLabel->value($productModel)->willReturn($picture);
-        $picture->getData()->willReturn('IMAGE_DATA');
-        $fileNormalizer->normalize('IMAGE_DATA', 'internal_api', $options)->willReturn($fileNormalized);
+        $imageNormalizer->normalize($picture, Argument::any())->willReturn($fileNormalized);
 
         $productValueConverter->convert($valuesLocalized)->willReturn($valuesConverted);
 
         $productModel->getId()->willReturn(12);
         $productModel->getCode()->willReturn('tshirt_blue');
         $versionManager->getOldestLogEntry($productModel)->willReturn('create_version');
-        $versionNormalizer->normalize('create_version', 'internal_api')->willReturn('normalized_create_version');
+        $versionNormalizer->normalize('create_version', 'internal_api', ['timezone' => 'Pacific/Kiritimati'])
+            ->willReturn('normalized_create_version');
         $versionManager->getNewestLogEntry($productModel)->willReturn('update_version');
-        $versionNormalizer->normalize('update_version', 'internal_api')->willReturn('normalized_update_version');
+        $versionNormalizer->normalize('update_version', 'internal_api', ['timezone' => 'Pacific/Kiritimati'])
+            ->willReturn('normalized_update_version');
 
         $productModel->getFamilyVariant()->willReturn($familyVariant);
         $familyVariant->getFamily()->willReturn($family);
@@ -185,6 +208,14 @@ class ProductModelNormalizerSpec extends ObjectBehavior
 
         $productModel->getVariationLevel()->willReturn(0);
 
+        $productModel->getAssociations()->willReturn([$association]);
+        $association->getAssociationType()->willReturn($associationType);
+        $associationType->getCode()->willReturn('group');
+        $association->getGroups()->willReturn($groups);
+        $groups->toArray()->willReturn([$group]);
+        $group->getId()->willReturn(12);
+        $association->getGroups()->willReturn($groups);
+
         $this->normalize($productModel, 'internal_api', $options)->shouldReturn(
             [
                 'code'           => 'tshirt_blue',
@@ -192,6 +223,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
                 'family'         => 'tshirts',
                 'categories'     => ['summer'],
                 'values'         => $valuesConverted,
+                'parent_associations' => null,
                 'meta'           => [
                     'variant_product_completenesses' => [
                         'completenesses' => [],
@@ -208,11 +240,16 @@ class ProductModelNormalizerSpec extends ObjectBehavior
                     'image'          => $fileNormalized,
                     'variant_navigation' => ['NAVIGATION NORMALIZED'],
                     'ascendant_category_ids' => [42],
-                    'completenesses' => ['kind of completenesses data normalized here'],
+                    'required_missing_attributes' => ['kind of completenesses data normalized here'],
                     'level'          => 0,
                     'label'          => [
                         'en_US' => 'Tshirt blue',
                         'fr_FR' => 'Tshirt bleu',
+                    ],
+                    'associations' => [
+                        'group' => [
+                            'groupIds' => [12]
+                        ]
                     ],
                 ],
             ]
@@ -222,7 +259,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
     function it_normalizes_product_models_without_image(
         $normalizer,
         $versionNormalizer,
-        $fileNormalizer,
+        $imageNormalizer,
         $versionManager,
         $localizedConverter,
         $productValueConverter,
@@ -234,6 +271,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
         $imageAsLabel,
         $ascendantCategories,
         $incompleteValuesNormalizer,
+        $userContext,
         AttributeInterface $pictureAttribute,
         ProductModelInterface $productModel,
         FamilyVariantInterface $familyVariant,
@@ -243,6 +281,8 @@ class ProductModelNormalizerSpec extends ObjectBehavior
         $options = [
             'decimal_separator' => ',',
             'date_format'       => 'dd/MM/yyyy',
+            'locale'            => 'en_US',
+            'channel'           => 'mobile',
         ];
 
         $productModelNormalized = [
@@ -276,6 +316,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
             'picture'             => [['data' => null, 'locale' => null, 'scope' => null]]
         ];
 
+        $userContext->getUserTimezone()->willReturn('UTC');
         $normalizer->normalize($productModel, 'standard', $options)->willReturn($productModelNormalized);
         $localizedConverter->convertToLocalizedFormats($productModelNormalized['values'], $options)->willReturn($valuesLocalized);
 
@@ -286,20 +327,22 @@ class ProductModelNormalizerSpec extends ObjectBehavior
         $pictureAttribute->getCode()->willReturn('picture');
 
         $localeRepository->getActivatedLocaleCodes()->willReturn(['en_US', 'fr_FR']);
-        $productModel->getLabel('en_US')->willReturn('Tshirt blue');
-        $productModel->getLabel('fr_FR')->willReturn('Tshirt bleu');
+        $productModel->getLabel('en_US', 'mobile')->willReturn('Tshirt blue');
+        $productModel->getLabel('fr_FR', 'mobile')->willReturn('Tshirt bleu');
 
         $imageAsLabel->value($productModel)->willReturn(null);
-        $fileNormalizer->normalize(Argument::cetera())->shouldNotBeCalled();
+        $imageNormalizer->normalize(null, Argument::any())->willReturn(null);
 
         $productValueConverter->convert($valuesLocalized)->willReturn($valuesConverted);
 
         $productModel->getId()->willReturn(12);
         $productModel->getCode()->willReturn('tshirt_blue');
         $versionManager->getOldestLogEntry($productModel)->willReturn('create_version');
-        $versionNormalizer->normalize('create_version', 'internal_api')->willReturn('normalized_create_version');
+        $versionNormalizer->normalize('create_version', 'internal_api', ['timezone' => 'UTC'])
+            ->willReturn('normalized_create_version');
         $versionManager->getNewestLogEntry($productModel)->willReturn('update_version');
-        $versionNormalizer->normalize('update_version', 'internal_api')->willReturn('normalized_update_version');
+        $versionNormalizer->normalize('update_version', 'internal_api', ['timezone' => 'UTC'])
+            ->willReturn('normalized_update_version');
 
         $productModel->getFamilyVariant()->willReturn($familyVariant);
         $familyVariant->getFamily()->willReturn($family);
@@ -323,6 +366,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
             ->willReturn(['kind of completenesses data normalized here']);
 
         $productModel->getVariationLevel()->willReturn(0);
+        $productModel->getAssociations()->willReturn([]);
 
         $this->normalize($productModel, 'internal_api', $options)->shouldReturn(
             [
@@ -331,6 +375,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
                 'family'         => 'tshirts',
                 'categories'     => ['summer'],
                 'values'         => $valuesConverted,
+                'parent_associations' => null,
                 'meta'           => [
                     'variant_product_completenesses' => [
                         'completenesses' => [],
@@ -347,12 +392,13 @@ class ProductModelNormalizerSpec extends ObjectBehavior
                     'image'          => null,
                     'variant_navigation' => ['NAVIGATION NORMALIZED'],
                     'ascendant_category_ids' => [42],
-                    'completenesses' => ['kind of completenesses data normalized here'],
+                    'required_missing_attributes' => ['kind of completenesses data normalized here'],
                     'level'          => 0,
                     'label'          => [
                         'en_US' => 'Tshirt blue',
                         'fr_FR' => 'Tshirt bleu',
                     ],
+                    'associations' => [],
                 ]
             ]
         );
@@ -361,7 +407,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
     function it_normalizes_product_models_without_multiple_levels(
         $normalizer,
         $versionNormalizer,
-        $fileNormalizer,
+        $imageNormalizer,
         $versionManager,
         $localizedConverter,
         $productValueConverter,
@@ -373,6 +419,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
         $imageAsLabel,
         $ascendantCategories,
         $incompleteValuesNormalizer,
+        $userContext,
         AttributeInterface $pictureAttribute,
         ProductModelInterface $productModel,
         FamilyVariantInterface $familyVariant,
@@ -383,6 +430,8 @@ class ProductModelNormalizerSpec extends ObjectBehavior
         $options = [
             'decimal_separator' => ',',
             'date_format'       => 'dd/MM/yyyy',
+            'locale'            => 'en_US',
+            'channel'           => 'mobile',
         ];
 
         $productModelNormalized = [
@@ -421,6 +470,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
             'picture'             => [['data' => 'a/b/c/my_picture.jpg', 'locale' => null, 'scope' => null]]
         ];
 
+        $userContext->getUserTimezone()->willReturn('UTC');
         $normalizer->normalize($productModel, 'standard', $options)->willReturn($productModelNormalized);
         $localizedConverter->convertToLocalizedFormats($productModelNormalized['values'], $options)->willReturn($valuesLocalized);
 
@@ -438,21 +488,22 @@ class ProductModelNormalizerSpec extends ObjectBehavior
         $pictureAttribute->getCode()->willReturn('picture');
 
         $localeRepository->getActivatedLocaleCodes()->willReturn(['en_US', 'fr_FR']);
-        $productModel->getLabel('en_US')->willReturn('Tshirt blue');
-        $productModel->getLabel('fr_FR')->willReturn('Tshirt bleu');
+        $productModel->getLabel('en_US', 'mobile')->willReturn('Tshirt blue');
+        $productModel->getLabel('fr_FR', 'mobile')->willReturn('Tshirt bleu');
 
         $imageAsLabel->value($productModel)->willReturn($picture);
-        $picture->getData()->willReturn('IMAGE_DATA');
-        $fileNormalizer->normalize('IMAGE_DATA', 'internal_api', $options)->willReturn($fileNormalized);
+        $imageNormalizer->normalize($picture, Argument::any())->willReturn($fileNormalized);
 
         $productValueConverter->convert($valuesLocalized)->willReturn($valuesConverted);
 
         $productModel->getId()->willReturn(12);
         $productModel->getCode()->willReturn('tshirt_blue');
         $versionManager->getOldestLogEntry($productModel)->willReturn('create_version');
-        $versionNormalizer->normalize('create_version', 'internal_api')->willReturn('normalized_create_version');
+        $versionNormalizer->normalize('create_version', 'internal_api', ['timezone' => 'UTC'])
+            ->willReturn('normalized_create_version');
         $versionManager->getNewestLogEntry($productModel)->willReturn('update_version');
-        $versionNormalizer->normalize('update_version', 'internal_api')->willReturn('normalized_update_version');
+        $versionNormalizer->normalize('update_version', 'internal_api', ['timezone' => 'UTC'])
+            ->willReturn('normalized_update_version');
 
         $productModel->getFamilyVariant()->willReturn($familyVariant);
         $familyVariant->getFamily()->willReturn($family);
@@ -476,6 +527,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
             ->willReturn(['kind of completenesses data normalized here']);
 
         $productModel->getVariationLevel()->willReturn(0);
+        $productModel->getAssociations()->willReturn([]);
 
         $this->normalize($productModel, 'internal_api', $options)->shouldReturn(
             [
@@ -484,6 +536,7 @@ class ProductModelNormalizerSpec extends ObjectBehavior
                 'family'         => 'tshirts',
                 'categories'     => ['summer'],
                 'values'         => $valuesConverted,
+                'parent_associations' => null,
                 'meta'           => [
                     'variant_product_completenesses' => [
                         'completenesses' => [],
@@ -500,12 +553,13 @@ class ProductModelNormalizerSpec extends ObjectBehavior
                     'image'          => $fileNormalized,
                     'variant_navigation' => ['NAVIGATION NORMALIZED'],
                     'ascendant_category_ids' => [42],
-                    'completenesses' => ['kind of completenesses data normalized here'],
+                    'required_missing_attributes' => ['kind of completenesses data normalized here'],
                     'level'          => 0,
                     'label'          => [
                         'en_US' => 'Tshirt blue',
                         'fr_FR' => 'Tshirt bleu',
                     ],
+                    'associations' => [],
                 ]
             ]
         );

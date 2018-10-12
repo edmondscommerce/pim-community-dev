@@ -1,16 +1,412 @@
 # 2.0.x
 
+# 2.0.38 (2018-09-13)
+
+- PIM-7645: Fix media field drop zone access
+
+# 2.0.37 (2018-09-11)
+
+## Bug fixes
+
+- PIM-7637: Fix computation of completness of variant products when an attribute at product model level is updated on a bulk action
+- PIM-7639: Fix the "forgot password" title visibility 
+- PIM-7265: Fix attributes groups order on the PEF
+
+# 2.0.36 (2018-09-05)
+
+## Bug fixes
+
+- PIM-7605: Fix error when a tree is removed
+
+# 2.0.35 (2018-08-24)
+
+## Bug fixes
+
+- PIM-7595: Add missing acl on family variant managment 
+- PIM-7557: Don't display attribute group filter if no attribute is chosen in "edit common attributes" action
+
+# 2.0.34 (2018-08-17)
+
+# 2.0.33 (2018-08-16)
+
+## Bug fixes
+
+- PIM-7574: Use step start time to name exported files instead of current time
+
+# 2.0.32 (2018-08-06)
+
+## Bug fixes
+
+- PIM-7559: Fix versionning query too slow on the PEF
+
+## BC Breaks
+
+- Method `Pim\Bundle\VersioningBundle\Repository\VersionRepositoryInterface::getNewestLogEntryForRessources` returns now an array
+
+# 2.0.31 (2018-08-01)
+
+## Performances
+
+- PIM-7531: (backport) Improve indexation during the "compute product models descendants" step on product models import
+
+## BC Breaks
+
+- Added the method `removeForProductWithoutIndexing` on the `Pim\Component\Catalog\Completeness\CompletenessRemoverInterface`
+
+## Bug fixes
+
+- PIM-7522: Fix association changes not save on the product history.
+
+# 2.0.30 (2018-07-25)
+
+## Technical improvements
+
+- PIM-7396: Improve family import performances.
+
+## Bug fixes
+
+- PIM-7452: Fix a memory leak when computing the completeness of all the products of a family.
+- PIM-7519 : Fix infinite scroll to see all reference data options when creating a new variant product.
+
+## BC Breaks
+
+- PIM-7396: Changes the service `pim_connector.job.csv_family_import` list of job steps
+            to replace `@pim_connector.step.csv_family.compute_data_related_to_family_variants` with
+            `@pim_connector.step.csv_family.compute_data_related_to_family_root_product_models` and `@pim_connector.step.csv_family.compute_data_related_to_family_sub_product_models`
+- PIM-7396: Changes the service `pim_connector.job.xlsx_family_import` list of job steps
+            to replace `@pim_connector.step.xlsx_family.compute_data_related_to_family_variants` with
+            `@pim_connector.step.xlsx_family.compute_data_related_to_family_root_product_models` and `@pim_connector.step.xlsx_family.compute_data_related_to_family_sub_product_models`
+
+# 2.0.29 (2018-07-04)
+
+## Bug fixes
+
+- PIM-7460: Fix locale flag for locales with two underscores like az_cyrl_AZ.
+- PIM-7472: Fix username display in user form title
+- PIM-7478: Fix memory leak on quick export
+- PIM-7462: Fix step execution read count
+- PIM-7480: Fix generation of export file name with a date
+
+# 2.0.28 (2018-06-26)
+
+## Bug fixes
+
+- PIM-7425: Prevent job 'compute_completeness_of_products_family' to run in some cases.
+- PIM-7396: Fix memory leak on product model descendants computation
+- PIM-7447: do not trigger caclulation of the completeness before exporting products
+- PIM-7411: Fix Request-URI Too Large issue on category selection for product export builder
+
+# 2.0.27 (2018-06-13)
+
+## Bug fixes
+
+- PIM-7327: Fix memory leak on completeness calculation
+- PIM-7426: Fix search on the product 'add to group' mass edit
+- PIM-7415: Force the minus symbol for number on localization, whatever the locale of the user
+
+# 2.0.26 (2018-06-06)
+
+## Bug fixes
+
+- PIM-7362: Fix Completeness computing from family keeping in account batch size to free the memory
+- PIM-7349: Fix empty family when using quick export of products
+- PIM-7040: Fix bad display of history grids on large strings
+- PIM-7014: Fix attribute creation page with large strings
+- PIM-7364: category tree must use the catalog locale for mass edit, not the UI locale
+- PIM-6846: Fix bug on click in Display Attributes button on Product edit form
+- PIM-7389: Refactor the 'add to group' mass edit screen to allow big set of groups
+- PIM-7311: Fix the product grid filters list when a sort order is a huge number
+- PIM-7391: Fix offset pagination when listing product models with the API
+- PIM-7009: Fix bug with pagination on associated products page on product edit form
+- PIM-7383: Fix 'in list' product filters with large amount of items
+- PIM-7398: Fix the impossibility to unselect categories in the category tree in case of category with numeric code
+- PIM-7363: Add family filter on remove values at wrong level command
+
+# 2.0.25 (2018-05-21)
+
+## Bug fixes
+
+- PIM-7338: Fix attribute groups labels in the grid
+- PIM-7334: Fix identifier filter with special characters
+- PIM-7337: Fix completeness popup when no label on attribute
+- PIM-7351: Fix boolean values display in product PDF
+- PIM-7348: Prevent completeness calculation for products without a family
+- GITHUB-7619: Fix a bug in measure family converter thats break the API (Cheers [Jan Schneider](https://github.com/yunosh))
+
+# 2.0.24 (2018-05-16)
+
+## Bug fixes
+
+- PIM-7335: Fix locale rendering on product form completeness panel
+- PIM-7323: Fix unique data synchronizer to handle value removal
+- PIM-7411: Fix Request-URI Too Large issue on category selection for product export builder
+
+# 2.0.23 (2018-04-30)
+
+## Bug fixes
+
+- PIM-7325: Fix family grid search filter
+- PIM-7328: Fix a bug that prevents to index very large texts in Elasticsearch
+
+# 2.0.22 (2018-04-25)
+
+## Bug fixes
+
+- PIM-7300: Fix the status filter on product grid for products with parent.
+- PIM-7282: Add validation on the code value during the attribute creation to prohibit the "entity_type" value.
+- PIM-7304: Fix the SKU filter to be scrollable
+- PIM-7043: Remove the last pagination button if it has more than 10 000 products on the product grid.
+- PIM-7299: Add pagination for family variants on several screens
+- PIM-7313: Prevent the same job to be executed by two different daemons due to race condition
+- PIM-7297: Fix memory leak on completeness purge command
+- PIM-7312: Fix attribute requirements update for a newly created channel
+- PIM-7322: Fix cast of a product model as string to format correctly violations
+- PIM-7320: Fix memory leak on boolean values purge command
+- PIM-7317: Fix iterator misuse in the database product model reader
+
+## BC Breaks
+
+- Changes the constructor of `Pim\Bundle\EnrichBundle\Controller\Rest\FamilyVariant` to add `Akeneo\Component\StorageUtils\Repository\SearchableRepositoryInterface`
+
+## Improvements
+
+- PIM-7321: Prevent concurrent calculation of the completeness
+- GITHUB-7179: Add index_hosts to the incenteev parameters (cheers [Jan Schneider](https://github.com/yunosh))
+
+# 2.0.21 (2018-04-10)
+
+## Improvements
+
+- PIM-7084: Add command to clean product values after attribute deletion
+
+## Bug fixes
+
+- PIM-7251: Fix history date on all grids (except product grid)
+- PIM-6993: Fix pagination on user grid in role and group edition
+- PIM-7275: Fix regression on group products grid filters
+- PIM-6962: Fix breadcrumb links issue after the save on the edit page
+- PIM-7267: Fix boolean attributes not added to variant product
+- PIM-7263: (BACKPORT for 2.0) Create a purging command (`pim:catalog:remove-wrong-boolean-values-on-variant-products`) for boolean values on variant products that should belong to parents
+- PIM-6999: Fix flash message on edit user
+
+## BC breaks
+
+- Add method signature from `Pim\Component\Catalog\Model\FamilyVariantInterface::getLevelForAttributeCode(string $attributeCode)`
+
+# 2.0.20 (2018-03-29)
+
+## Bug fixes
+
+- PIM-7240: Add subscriber to clear the cache between each job step batch
+- PIM-7257: Add missing translations in product grid
+- PIM-7241: Fix memory consumption issue when archiving an import file
+- PIM-7256: Add missing filters on product group grid
+- PIM-6945: Fix missing header elements on identifier attribute edit form
+- PIM-7259: Remove only attribute's option removed for multi select attribute
+- PIM-7270: Fix [object Object] empty filter value
+- PIM-7252: Fix permissions on attributes settings page
+- PIM-7260: Add form validation in the 'configure' step of mass edits
+
+# 2.0.19 (2018-03-23)
+
+## Bug fixes
+
+- PIM-7203: Fix bulk actions mass edit only some of the selection
+- PIM-7237: Fix integrity constraint violation during import
+- PIM-7243: Fix issue on currencies in CSV and XLSX product imports
+- PIM-7244: Fix duplicated entry during products import
+
+# 2.0.18 (2018-03-20)
+
+## Bug fixes
+
+- PIM-7129: Fix repeated content for a Yaml export
+- PIM-7255: Reduce Slowness of the datagrid
+- PIM-7152: Fix errors due to deletion of attributes linked to published products
+- PIM-7214: Fix a bug that prevents to select multiple items across pages in Products, Family and associations grids
+- PIM-7215: Fix wrong direction of sorting arrow in the grids
+- PIM-7220: Fix the filter "is empty" when the attribute belongs to a family
+- PIM-7216: Allow to easily override Product and VariantProduct classes
+
+# 2.0.17 (2018-03-06)
+
+## Improvements
+
+- GITHUB-7730: Improve product and product model import performances by using cached repositories
+- GITHUB-7757: Fix wrong position of warning icon, thanks @AngelVazquezArroyo !
+
+## Bug fixes
+
+- PIM-7118: Fix bug related to product export
+- PIM-7199: Display a message when trying to delete the pim identifier attribute
+- PIM-7217: Fix missing and disabled fields in product model import
+- PIM-7167: Fix slowness when going back to the Product grid when a family is used in the filter
+
+# 2.0.16 (2018-02-22)
+
+## Bug fixes
+
+- PIM-7170: Fix media files unnecessarily generated during quick export
+- PIM-7155: Fix remove a locale from a channel
+
+# 2.0.15 (2018-02-01)
+
+# 2.0.14 (2018-02-01)
+
+## Bug fixes
+
+- PIM-7131: Fix mass add product values when number of products selected is greater than batch size
+- PIM-7144: Fix translated label of attribute groups in the product edit form
+
+# 2.0.13 (2018-01-23)
+
+## Bug fixes
+
+- PIM-7111: Fix display bug on variant axis completeness
+- PIM-6908: Fix cancel button on unsaved changes dialog
+- PIM-6913: Fix incorrect product completeness percentage
+- PIM-7057: Fix import families by adding a dedicated step regarding the computing of product models data
+
+## BC Breaks
+
+- Changes the constructor of `\Pim\Bundle\CatalogBundle\EventSubscriber\SaveFamilyVariantOnFamilyUpdateSubscriber` to add `Akeneo\Component\StorageUtils\Detacher\BulkObjectDetacherInterface`
+
+# 2.0.12 (2018-01-12)
+
+## Bug fixes
+
+- PIM-7102: Fix product categories and groups being lost when attaching a product to a product model
+- PIM-6874: Fix select attribute groups from PEF when there are more than 25
+- PIM-7086: Fix enable loading message in system configuration
+- API-567: Fix validation of product-models on API
+- PIM-7085: Fix translation missing
+- PIM-6965: Show short view|project name in the grid
+- PIM-7083: fix access to product edit form if no right to view default locale
+- PIM-7082: remove double user menu on product import edit form
+- PIM-7084: fix attribute suppression
+- PIM-6355: Fix the count by categories on the product grid
+- PIM-7105: Fix un-index variant product on deletion
+
+## Improvements
+
+- PIM-7103: Improve product datagrid performance
 
 ## Better manage products with variants!
 
+- API-516: be able to add a parent to a product via API
+- API-566: "updated" filter works on product variant if its product models were updated
+
+## BC Breaks
+
+- Changes the constructor of `Pim\Bundle\ApiBundle\Controller\ProductController` to add `Pim\Component\Catalog\EntityWithFamilyVariant\AddParent`
+- Changes the service `pim_enrich.doctrine.counter.category_product` first argument to a `@pim_catalog.query.product_query_builder_factory`
+
+# 2.0.11 (2018-01-05)
+
+## Bug fixes
+
+- API-568: Forbid the use of an non existing attribute in product creation and update
+- API-544: Forbid the use of an non existing attribute in product models creation and update
+- PIM-7062: Allow to delete attributes contained in a family variant
+- PIM-6944: Fix delta export for variant products
+- PIM-7070: Fix sequential edit when selecting multiple product models
+- PIM-6812: Change the message when delete an attribute as variant axis
+- PIM-7048: Fix cascade persist issue during import of families with variant
+- PIM-7049: Fix random order of attribute options
+- PIM-7080: Fix memory leak on product export
+- PIM-6955: Fix delete user
+- PIM-7065: Fix versioning when attribute codes are numerics.
+- PIM-7087: Fix completeness normalization when channel code is numeric.
+- PIM-6968: Fix mass delete product
+
+## Improvements
+
+- PIM-7079: Improve indexation performance of ValueCollection when deleting values
+
+## BC breaks
+
+- Changes the constructor of  `Pim\Component\Catalog\ProductModel\Filter\ProductAttributeFilter` add `Akeneo\Component\StorageUtils\Repository\IdentifiableObjectRepositoryInterface`
+- Changes the constructor of  `Pim\Component\Catalog\ProductModel\Filter\ProductModelAttributeFilter` add `Akeneo\Component\StorageUtils\Repository\IdentifiableObjectRepositoryInterface`
+- Changes the constructor of `Pim\Bundle\EnrichBundle\Controller\Rest\AttributeController` add `Doctrine\ORM\EntityManagerInterface` and `Symfony\Component\Translation\TranslatorInterface`
+- Changes the constructor of `Pim\Bundle\CatalogBundle\EventSubscriber\SaveFamilyVariantOnFamilyUpdateSubscriber` add `Akeneo\Component\StorageUtils\Detacher\BulkObjectDetacherInterface`
+- Changes the constructor of `Pim/Bundle/DataGridBundle/Extension/MassAction/Handler/DeleteProductsMassActionHandler` to add `Akeneo\Component\StorageUtils\Cursor\CursorFactoryInterface`
+- Changes the constructor of `Pim\Bundle\ApiBundle\Controller\MediaFileController` to add `Akeneo\Component\StorageUtils\Repository\IdentifiableObjectRepositoryInterface`
+- Changes the constructor of `Pim\Bundle\ApiBundle\Controller\MediaFileController` to add `Akeneo\Component\StorageUtils\Updater\ObjectUpdaterInterface`
+- Changes the constructor of `Pim\Bundle\ApiBundle\Controller\MediaFileController` to add `Akeneo\Component\StorageUtils\Saver\SaverInterface`
+
+## Better manage products with variants!
+
+- API-543: update product model with media file via API
+
+# 2.0.10 (2017-12-22)
+
+## Bug fixes
+
+- PIM-7032: Fix close button when clicking on "Compare/Translate" option on the product edit form
+- PIM-7063: Add validation for AttributeGroup - cannot remove AttributeGroup containing attributes and cannot remove AttributGroup "other"
+
+# 2.0.9 (2017-12-15)
+
+## Bug fixes
+
+- PIM-7037: Allows code to be an integer on product model import
+- PIM-7011: XLSX Options Import - Simple select attribute option cannot be updated for options with numeric codes
+- PIM-7039: Association grid, scopable attributes used as labels do not appear
+- PIM-6980: Missing labels for attribute prevent you from creating a variant family
+- PIM-7030: Not allow empty Metric value as axis for variant products
+
+## Better manage products with variants!
+
+- PIM-6341: Allow cascade deletion of product models via the grid and PEF
+- PIM-6357: Adds mass edit of attributes for product and product models
+
+## BC breaks
+
+- MySQL table constraints and elasticsearch indexes have changed. Please execute the pending migrations using the `doctrine:migrations:migrate` console command.
+
+# 2.0.8 (2017-12-07)
+
+## Bug fixes
+
+- PIM-7035: fix reset login page style and error 500 thrown after submitting form
+- PIM-7045: fix memory leak in step `Compute product model descendants` for product model import
+- PIM-6958: fix loading a product with a reference data that is not available (simpleselect or multiselect)
+
+## Better manage products with variants!
+
+- PIM-6349: Adds mass edit to add products to an existing product model
+- PIM-6791: Change a product in a variant product by import
+
+## Update jobs
+
+IMPORTANT: In order to use the new mass edit, please execute `bin/console akeneo:batch:create-job internal add_to_existing_product_model mass_edit add_to_existing_product_model '{}' 'Add products to an existing product model' --env=prod`
+
+## BC breaks
+
+- Changes the constructor of `Pim\Bundle\EnrichBundle\Controller\Rest\ProductModelController` to add `Pim\Component\Catalog\Repository\FamilyVariantRepositoryInterface`
+- Changes the constructor of `Akeneo\Bundle\ElasticsearchBundle\Cursor\CursorFactory` to add `Akeneo\Component\StorageUtils\Repository\CursorableRepositoryInterface` and remove `Doctrine\Common\Persistence\ObjectManager` and string `$entityClassName`
+- Changes the constructor of `Akeneo\Bundle\ElasticsearchBundle\Cursor\FromSizeCursorFactory` to add `Akeneo\Component\StorageUtils\Repository\CursorableRepositoryInterface` and remove `Doctrine\Common\Persistence\ObjectManager` and string `$entityClassName`
+- Changes the constructor of `Akeneo\Bundle\ElasticsearchBundle\Cursor\SearchAfterSizeCursorFactory` to add `Akeneo\Component\StorageUtils\Repository\CursorableRepositoryInterface` and remove `Doctrine\Common\Persistence\ObjectManager` and string `$entityClassName`
+- Deletes `Pim\Component\Catalog\Repository\ProductRepositoryInterface::getAssociatedProductIds()`
+- Changes the constructor of `Pim\Component\Catalog\Validator\Constraints\ImmutableVariantAxesValuesValidator` to remove `Doctrine\ORM\EntityManagerInterface`
+
+
+# 2.0.7 (2017-11-23)
+
+## Better manage products with variants!
+
+- PIM-6567: Add edition capabilities to family variants from the UI (distribution of the attributes)
+- PIM-6460: Preventing from deleting attributes used as axis from the family and remove the deleted attributes from the family variants
+- PIM-6986: Change the image in add variant modal
 - API-400: Update partially a family variant with the API
 - API-401: Update partially a list of family variants with the API
-- PIM-65671: Add edition capabilities to family variants
+- PIM-6357: Show the right count when selecting product and product models on mass edit
 
 ## Bug fixes
 
 - PIM-6489: fix the sort of attributes in attribute groups
 - PIM-6997: fixes product model indexing CLI command slowness
+- PIM-6959: fix getting the product label according to the scope if needed
 
 ## Improvements
 
@@ -18,15 +414,17 @@
 - PIM-6838: Display completeness panel after Attributes in the PEF
 - PIM-6891: On the grid, execute the ES query only once, not twice
 - PIM-6967: Allow category panels to be resized
-- PIM-6460: Preventing from deleting attributes used as axis from the family and remove the deleted attributes from the family variants.
 - PIM-6585: Add help center link in menu
 - PIM-6833: Aligns technical requirements with documentation
 - PIM-6992: Keep category panel open
-- PIM-6986: Change the image in add variant modal
+- PIM-6791: Change a product in a variant product by import
 
 ## BC breaks
 
+- New data has been indexed in Elasticsearch. Please re-index the products and product models by launching the commands `pim:product:index --all -e prod` and `pim:product-model:index --all -e prod`.
 - Change the constructor of `Pim\Bundle\ApiBundle\Controller\FamilyVariantController` to add `Pim\Bundle\ApiBundle\Stream\StreamResourceResponse`.
+- Replace `Pim\Component\Catalog\Builder\ProductBuilderInterface` by `Pim\Component\Connector\Processor\Denormalization\Product\AddParent` and `Pim\Component\Connector\Processor\Denormalization\Product\FindProductToImport` in `Pim\Component\Connector\Processor\Denormalization\ProductProcessor`
+- Change method signature from `Pim\Component\Catalog\Model\ProductInterface::setAssociations(array $associations)` to `Pim\Component\Catalog\Model\ProductInterface::setAssociations(Collection $associations)`
 
 # 2.0.6 (2017-11-03)
 
@@ -60,6 +458,8 @@
 ## Update jobs
 
 IMPORTANT: In order to use the new quick exports, please execute `bin/console doctrine:migrations:migrate` to migrate your configurations.
+IMPORTANT: In order for your PIM to work properly, you will need to run the following commands to add the missing job instances.
+- Add the job instance `compute_family_variant_structure_changes`: `bin/console akeneo:batch:create-job "internal" "compute_family_variant_structure_changes" "compute_family_variant_structure_changes" "compute_family_variant_structure_changes" '{"family_variant_codes":["null"]}' "Compute family variant structure changes" --env=prod`
 
 # 2.0.5 (2017-10-26)
 
@@ -881,7 +1281,7 @@ IMPORTANT: In order for your PIM to work properly, you will need to run the foll
 - Change the constructor of `Pim\Bundle\EnrichBundle\Controller\ProductController` to add `Pim\Component\Catalog\ValuesFiller\EntityWithFamilyValuesFillerInterface`
 - Change the constructor of `Akeneo\Bundle\BatchBundle\Launcher\SimpleJobLauncher` to add `Akeneo\Component\Batch\Job\JobParametersValidator`
 - Change the constructor of `Pim\Bundle\ConnectorBundle\Launcher\AuthenticatedJobLauncher` to add `Akeneo\Component\Batch\Job\JobParametersValidator`
-- Change the constructor of `Pim\Bundle\AnalyticsBundle\DataCollector\VersionDataCollector` to replace `string` by `Pim\Bundle\InstallerBundle\InstallStatusManager\InstallStatusManager` - Change the constructor of `Pim\Bundle\EnrichBundle\Controller\Rest\JobInstanceController` to add `uploadTmpDir` (string)
+- Change the constructor of `Akeneo\Platform\Bundle\AnalyticsBundle\DataCollector\VersionDataCollector` to replace `string` by `Pim\Bundle\InstallerBundle\InstallStatusManager\InstallStatusManager` - Change the constructor of `Pim\Bundle\EnrichBundle\Controller\Rest\JobInstanceController` to add `uploadTmpDir` (string)
 - Change the constructor of `Pim\Component\Connector\Processor\Denormalization\ProductProcessor` to add `Pim\Component\Catalog\Builder\ProductBuilderInterface` as the 3rd argument (variant product builder).
 - Change the constructor of `Pim\Bundle\EnrichBundle\Controller\Rest\JobInstanceController` to add `uploadTmpDir` (string)
 - Change the constructor of `Pim\Component\Connector\Processor\Denormalization\ProductProcessor` to add `Pim\Component\Catalog\Builder\ProductBuilderInterface` as the 3rd argument (variant product builder).

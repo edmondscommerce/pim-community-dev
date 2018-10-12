@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace Pim\Bundle\EnrichBundle\Normalizer;
 
+use Akeneo\Channel\Component\Repository\LocaleRepositoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Association\MissingAssociationAdder;
+use Akeneo\Pim\Enrichment\Component\Product\EntityWithFamilyVariant\EntityWithFamilyVariantAttributesProvider;
+use Akeneo\Pim\Enrichment\Component\Product\Localization\Localizer\AttributeConverterInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ValueInterface;
+use Akeneo\Pim\Enrichment\Component\Product\ProductModel\ImageAsLabel;
+use Akeneo\Pim\Enrichment\Component\Product\ProductModel\Query\VariantProductRatioInterface;
+use Akeneo\Pim\Enrichment\Component\Product\ValuesFiller\EntityWithFamilyValuesFillerInterface;
+use Akeneo\Tool\Bundle\VersioningBundle\Manager\VersionManager;
+use Akeneo\UserManagement\Bundle\Context\UserContext;
 use Pim\Bundle\EnrichBundle\Provider\Form\FormProviderInterface;
-use Pim\Bundle\VersioningBundle\Manager\VersionManager;
-use Pim\Component\Catalog\FamilyVariant\EntityWithFamilyVariantAttributesProvider;
-use Pim\Component\Catalog\Localization\Localizer\AttributeConverterInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Model\ValueInterface;
-use Pim\Component\Catalog\ProductModel\ImageAsLabel;
-use Pim\Component\Catalog\ProductModel\Query\VariantProductRatioInterface;
-use Pim\Component\Catalog\Repository\LocaleRepositoryInterface;
-use Pim\Component\Catalog\ValuesFiller\EntityWithFamilyValuesFillerInterface;
 use Pim\Component\Enrich\Converter\ConverterInterface;
 use Pim\Component\Enrich\Query\AscendantCategoriesInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -34,8 +36,8 @@ class ProductModelNormalizer implements NormalizerInterface
     /** @var NormalizerInterface */
     private $versionNormalizer;
 
-    /** @var NormalizerInterface */
-    private $fileNormalizer;
+    /** @var ImageNormalizer */
+    private $imageNormalizer;
 
     /** @var VersionManager */
     private $versionManager;
@@ -73,11 +75,20 @@ class ProductModelNormalizer implements NormalizerInterface
     /** @var NormalizerInterface */
     private $incompleteValuesNormalizer;
 
+    /** @var UserContext */
+    private $userContext;
+
+    /** @var NormalizerInterface */
+    private $parentAssociationsNormalizer;
+
+    /** @var MissingAssociationAdder */
+    private $missingAssociationAdder;
+
     /**
      * @param NormalizerInterface                       $normalizer
      * @param NormalizerInterface                       $versionNormalizer
-     * @param NormalizerInterface                       $fileNormalizer
      * @param VersionManager                            $versionManager
+     * @param ImageNormalizer                           $imageNormalizer
      * @param AttributeConverterInterface               $localizedConverter
      * @param ConverterInterface                        $productValueConverter
      * @param FormProviderInterface                     $formProvider
@@ -89,12 +100,15 @@ class ProductModelNormalizer implements NormalizerInterface
      * @param ImageAsLabel                              $imageAsLabel
      * @param AscendantCategoriesInterface              $ascendantCategoriesQuery
      * @param NormalizerInterface                       $incompleteValuesNormalizer
+     * @param UserContext                               $userContext
+     * @param MissingAssociationAdder                   $missingAssociationAdder
+     * @param NormalizerInterface                       $parentAssociationsNormalizer
      */
     public function __construct(
         NormalizerInterface $normalizer,
         NormalizerInterface $versionNormalizer,
-        NormalizerInterface $fileNormalizer,
         VersionManager $versionManager,
+        ImageNormalizer $imageNormalizer,
         AttributeConverterInterface $localizedConverter,
         ConverterInterface $productValueConverter,
         FormProviderInterface $formProvider,
@@ -105,30 +119,39 @@ class ProductModelNormalizer implements NormalizerInterface
         VariantProductRatioInterface $variantProductRatioQuery,
         ImageAsLabel $imageAsLabel,
         AscendantCategoriesInterface $ascendantCategoriesQuery,
-        NormalizerInterface $incompleteValuesNormalizer
+        NormalizerInterface $incompleteValuesNormalizer,
+        UserContext $userContext,
+        MissingAssociationAdder $missingAssociationAdder,
+        NormalizerInterface $parentAssociationsNormalizer
     ) {
-        $this->normalizer            = $normalizer;
-        $this->versionNormalizer     = $versionNormalizer;
-        $this->fileNormalizer        = $fileNormalizer;
-        $this->versionManager        = $versionManager;
-        $this->localizedConverter    = $localizedConverter;
+        $this->normalizer = $normalizer;
+        $this->versionNormalizer = $versionNormalizer;
+        $this->versionManager = $versionManager;
+        $this->imageNormalizer = $imageNormalizer;
+        $this->localizedConverter = $localizedConverter;
         $this->productValueConverter = $productValueConverter;
-        $this->formProvider          = $formProvider;
-        $this->localeRepository      = $localeRepository;
-        $this->entityValuesFiller    = $entityValuesFiller;
-        $this->attributesProvider    = $attributesProvider;
-        $this->navigationNormalizer  = $navigationNormalizer;
+        $this->formProvider = $formProvider;
+        $this->localeRepository = $localeRepository;
+        $this->entityValuesFiller = $entityValuesFiller;
+        $this->attributesProvider = $attributesProvider;
+        $this->navigationNormalizer = $navigationNormalizer;
         $this->variantProductRatioQuery = $variantProductRatioQuery;
         $this->imageAsLabel = $imageAsLabel;
         $this->ascendantCategoriesQuery = $ascendantCategoriesQuery;
         $this->incompleteValuesNormalizer = $incompleteValuesNormalizer;
+        $this->userContext = $userContext;
+        $this->parentAssociationsNormalizer = $parentAssociationsNormalizer;
+        $this->missingAssociationAdder = $missingAssociationAdder;
     }
 
     /**
      * {@inheritdoc}
+     *
+     * @param ProductModelInterface $productModel
      */
     public function normalize($productModel, $format = null, array $context = []): array
     {
+        $this->missingAssociationAdder->addMissingAssociations($productModel);
         $this->entityValuesFiller->fillMissingValues($productModel);
 
         $normalizedProductModel = $this->normalizer->normalize($productModel, 'standard', $context);
@@ -144,8 +167,18 @@ class ProductModelNormalizer implements NormalizerInterface
         $oldestLog = $this->versionManager->getOldestLogEntry($productModel);
         $newestLog = $this->versionManager->getNewestLogEntry($productModel);
 
-        $created = null !== $oldestLog ? $this->versionNormalizer->normalize($oldestLog, 'internal_api') : null;
-        $updated = null !== $newestLog ? $this->versionNormalizer->normalize($newestLog, 'internal_api') : null;
+        $created = null !== $oldestLog ?
+            $this->versionNormalizer->normalize(
+                $oldestLog,
+                'internal_api',
+                ['timezone' => $this->userContext->getUserTimezone()]
+            ) : null;
+        $updated = null !== $newestLog ?
+            $this->versionNormalizer->normalize(
+                $newestLog,
+                'internal_api',
+                ['timezone' => $this->userContext->getUserTimezone()]
+            ) : null;
 
         $levelAttributes = [];
         foreach ($this->attributesProvider->getAttributes($productModel) as $attribute) {
@@ -157,10 +190,15 @@ class ProductModelNormalizer implements NormalizerInterface
             $axesAttributes[] = $attribute->getCode();
         }
 
+        $normalizedProductModel['parent_associations'] = $this->parentAssociationsNormalizer
+            ->normalize($productModel, $format, $context);
+
         $normalizedFamilyVariant = $this->normalizer->normalize($productModel->getFamilyVariant(), 'standard');
 
         $variantProductCompletenesses = $this->variantProductRatioQuery->findComplete($productModel);
         $closestImage = $this->imageAsLabel->value($productModel);
+
+        $scopeCode = $context['channel'] ?? null;
 
         $normalizedProductModel['meta'] = [
                 'variant_product_completenesses' => $variantProductCompletenesses->values(),
@@ -172,12 +210,12 @@ class ProductModelNormalizer implements NormalizerInterface
                 'model_type'                => 'product_model',
                 'attributes_for_this_level' => $levelAttributes,
                 'attributes_axes'           => $axesAttributes,
-                'image'                     => $this->normalizeImage($closestImage, $format, $context),
+                'image'                     => $this->normalizeImage($closestImage, $context),
                 'variant_navigation'        => $this->navigationNormalizer->normalize($productModel, $format, $context),
                 'ascendant_category_ids'    => $this->ascendantCategoriesQuery->getCategoryIds($productModel),
-                'completenesses'            => $this->incompleteValuesNormalizer->normalize($productModel, $format, $context),
+                'required_missing_attributes' => $this->incompleteValuesNormalizer->normalize($productModel, $format, $context),
                 'level'                     => $productModel->getVariationLevel(),
-            ] + $this->getLabels($productModel);
+            ] + $this->getLabels($productModel, $scopeCode) + $this->getAssociationMeta($productModel);
 
         return $normalizedProductModel;
     }
@@ -192,33 +230,52 @@ class ProductModelNormalizer implements NormalizerInterface
 
     /**
      * @param ProductModelInterface $productModel
+     * @param string|null           $scopeCode
      *
      * @return array
      */
-    private function getLabels(ProductModelInterface $productModel): array
+    private function getLabels(ProductModelInterface $productModel, string $scopeCode = null): array
     {
         $labels = [];
 
         foreach ($this->localeRepository->getActivatedLocaleCodes() as $localeCode) {
-            $labels[$localeCode] = $productModel->getLabel($localeCode);
+            $labels[$localeCode] = $productModel->getLabel($localeCode, $scopeCode);
         }
 
         return ['label' => $labels];
     }
 
     /**
+     * @param ProductModelInterface $productModel
+     *
+     * @return array
+     */
+    protected function getAssociationMeta(ProductModelInterface $productModel)
+    {
+        $meta = [];
+        $associations = $productModel->getAssociations();
+
+        foreach ($associations as $association) {
+            $associationType = $association->getAssociationType();
+            $meta[$associationType->getCode()]['groupIds'] = array_map(
+                function ($group) {
+                    return $group->getId();
+                },
+                $association->getGroups()->toArray()
+            );
+        }
+
+        return ['associations' => $meta];
+    }
+
+    /**
      * @param ValueInterface|null $data
-     * @param string|null         $format
      * @param array               $context
      *
      * @return array|null
      */
-    private function normalizeImage(?ValueInterface $data, ?string $format, array $context = []): ?array
+    private function normalizeImage(?ValueInterface $data, array $context = []): ?array
     {
-        if (null === $data || null === $data->getData()) {
-            return null;
-        }
-
-        return $this->fileNormalizer->normalize($data->getData(), $format, $context);
+        return $this->imageNormalizer->normalize($data, $context['locale']);
     }
 }

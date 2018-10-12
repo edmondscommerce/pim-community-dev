@@ -1,0 +1,31 @@
+@import '../../base/variables';
+
+.AknFormContainer {
+  width: @AknMaxFormWidth;
+  z-index: 1;
+
+  &--large {
+    width: 710px;
+  }
+
+  &--wide {
+    width: 100%;
+  }
+
+  &--withPadding:not(:empty) {
+    margin: 20px 0 10px;
+  }
+
+  &--centered {
+    margin: auto;
+  }
+
+  &--expanded {
+    max-width: 920px;
+    width: 100%;
+  }
+
+  &--inline {
+    width: auto;
+  }
+}

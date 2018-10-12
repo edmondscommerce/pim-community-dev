@@ -2,18 +2,18 @@
 
 namespace spec\Pim\Bundle\EnrichBundle\Connector\Reader\MassEdit;
 
-use Akeneo\Component\Batch\Job\JobParameters;
-use Akeneo\Component\Batch\Model\StepExecution;
-use Akeneo\Component\StorageUtils\Cursor\CursorInterface;
+use Akeneo\Tool\Component\Batch\Job\JobParameters;
+use Akeneo\Tool\Component\Batch\Model\StepExecution;
+use Akeneo\Tool\Component\StorageUtils\Cursor\CursorInterface;
 use PhpSpec\ObjectBehavior;
 use Pim\Bundle\EnrichBundle\Connector\Reader\MassEdit\FilteredProductModelReader;
-use Pim\Component\Catalog\Model\ChannelInterface;
-use Pim\Component\Catalog\Model\ProductInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Query\ProductQueryBuilderFactoryInterface;
-use Pim\Component\Catalog\Query\ProductQueryBuilderInterface;
-use Pim\Component\Catalog\Repository\ChannelRepositoryInterface;
-use Pim\Component\Catalog\Converter\MetricConverter;
+use Akeneo\Channel\Component\Model\ChannelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Query\ProductQueryBuilderFactoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Query\ProductQueryBuilderInterface;
+use Akeneo\Channel\Component\Repository\ChannelRepositoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Converter\MetricConverter;
 use Prophecy\Argument;
 use Prophecy\Promise\ReturnPromise;
 
@@ -56,9 +56,6 @@ class FilteredProductModelReaderSpec extends ObjectBehavior
         ProductModelInterface $productModel1,
         ProductModelInterface $productModel2,
         ProductModelInterface $productModel3,
-        ProductInterface $product1,
-        ProductInterface $product2,
-        ProductInterface $product3,
         JobParameters $jobParameters
     ) {
         $filters = [
@@ -87,14 +84,18 @@ class FilteredProductModelReaderSpec extends ObjectBehavior
         $channelRepository->findOneByIdentifier('mobile')->willReturn($channel);
         $channel->getCode()->willReturn('mobile');
 
-        $pqbFactory->create(['filters' => $filters['data'], 'default_scope' => 'mobile'])
+        $pqbFactory->create(['filters' => array_merge($filters['data'], [[
+            'field' => 'entity_type',
+            'operator' => '=',
+            'value' => ProductModelInterface::class,
+        ]]), 'default_scope' => 'mobile'])
             ->shouldBeCalled()
             ->willReturn($pqb);
         $pqb->execute()
             ->shouldBeCalled()
             ->willReturn($cursor);
 
-        $products = [$product1, $productModel1, $product2, $productModel2, $productModel3, $product3];
+        $products = [$productModel1, $productModel2, $productModel3];
         $productsCount = count($products);
         $cursor->valid()->will(
             function () use (&$productsCount) {
@@ -104,9 +105,9 @@ class FilteredProductModelReaderSpec extends ObjectBehavior
         $cursor->current()->will(new ReturnPromise($products));
         $cursor->next()->shouldBeCalled();
 
-        $stepExecution->incrementSummaryInfo('read')->shouldBeCalledTimes(6);
+        $stepExecution->incrementSummaryInfo('read')->shouldBeCalledTimes(3);
         $metricConverter->convert(Argument::any(), $channel)->shouldBeCalledTimes(3);
-        $stepExecution->incrementSummaryInfo('skip')->shouldBeCalledTimes(3);
+        $stepExecution->incrementSummaryInfo('skip')->shouldBeCalledTimes(0);
 
         $this->initialize();
         $this->read()->shouldReturn($productModel1);

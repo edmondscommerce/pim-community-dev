@@ -47,7 +47,7 @@ extensions:
         targetZone: column
         config:
           stateCode: product_edit_form
-          navigationTitle: pim_enrich.entity.product.navigation
+          navigationTitle: pim_menu.navigation.product
 
     pim-product-model-edit-form-column-tabs-navigation:
         module: pim/form/common/column-tabs-navigation
@@ -55,7 +55,7 @@ extensions:
         targetZone: navigation
         position: 10
         config:
-          title: pim_enrich.entity.product.navigation
+          title: pim_menu.navigation.product
 
     pim-product-model-edit-form-meta:
         module: pim/form/common/meta
@@ -63,7 +63,7 @@ extensions:
         targetZone: bottom
         position: 10
         config:
-            label: pim_enrich.entity.product.infos
+            label: pim_menu.navigation.product_infos
 
     pim-product-model-edit-form-column-tabs:
         module: pim/form/common/column-tabs
@@ -89,6 +89,21 @@ extensions:
         targetZone: secondary-actions
         position: 80
 
+    pim-product-model-edit-form-delete:
+        module: pim/product-model-edit-form/delete
+        parent: pim-product-model-edit-form-secondary-actions
+        targetZone: secondary-actions
+        aclResourceId: pim_enrich_product_model_remove
+        position: 100
+        config:
+            trans:
+                title: pim_enrich.entity.product_model.module.delete.confirm
+                subTitle: pim_enrich.entity.product.plural_label_model
+                content: pim_common.confirm_deletion
+                success: pim_enrich.entity.product_model.flash.delete.success
+                fail: pim_enrich.entity.product_model.flash.delete.fail
+            redirect: pim_enrich_product_index
+
     pim-product-model-edit-form-save-buttons:
         module: pim/form/common/save-buttons
         parent: pim-product-model-edit-form
@@ -107,7 +122,7 @@ extensions:
         targetZone: state
         position: 900
         config:
-            entity: pim_enrich.entity.product.title
+            entity: pim_enrich.entity.product.label
 
     pim-product-model-edit-form-family:
         module: pim/product-edit-form/meta/family
@@ -127,8 +142,8 @@ extensions:
         targetZone: meta
         position: 90
         config:
-            label: pim_enrich.entity.product.meta.created
-            labelBy: pim_enrich.entity.product.meta.created_by
+            label: pim_common.created
+            labelBy: pim_common.by
 
     pim-product-model-edit-form-updated:
         module: pim/product-edit-form/meta/updated
@@ -136,8 +151,8 @@ extensions:
         targetZone: meta
         position: 100
         config:
-            label: pim_enrich.entity.product.meta.updated
-            labelBy: pim_enrich.entity.product.meta.updated_by
+            label: pim_enrich.entity.product.module.meta.updated
+            labelBy: pim_common.by
 
     pim-product-model-edit-form-attributes:
         module: pim/product-edit-form/attributes
@@ -148,19 +163,30 @@ extensions:
         config:
             removeAttributeRoute: pim_enrich_product_remove_attribute_rest
             removeAttributeACL: pim_enrich_product_remove_attribute
-            tabTitle: pim_enrich.form.product.tab.attributes.title
-            deletionFailed: pim_enrich.form.product.flash.attribute_deletion_error
+            tabTitle: pim_enrich.entity.attribute.plural_label
+            deletionFailed: pim_enrich.entity.attribute.flash.delete.fail
 
     pim-product-model-edit-form-categories:
         module: pim/product-edit-form/categories
         parent: pim-product-model-edit-form-column-tabs
         targetZone: container
-        aclResourceId: pim_enrich_product_categories_view #TODO
+        aclResourceId: pim_enrich_product_model_categories_view
         position: 100
         config:
             tabCode: pim-product-edit-form-categories
             itemCategoryListRoute: pim_enrich_product_model_listcategories
             itemCategoryTreeRoute: pim_enrich_product_model_category_rest_list
+
+    pim-product-model-edit-form-associations:
+        module: pim/product-edit-form/associations
+        parent: pim-product-model-edit-form-column-tabs
+        targetZone: container
+        aclResourceId: pim_enrich_associations_view
+        position: 110
+        config:
+            tabCode: pim-product-edit-form-associations
+            aclAddAssociations: pim_enrich_associations_edit
+            datagridName: 'association-product-model-grid'
 
     pim-product-model-edit-form-attribute-group-selector:
         module: pim/form/common/attributes/attribute-group-selector
@@ -197,6 +223,12 @@ extensions:
         position: 120
         config:
             context: base_product
+
+    pim-product-model-edit-form-total-missing-required-attributes:
+        module: pim/product-edit-form/total-missing-required-attributes
+        parent: pim-product-model-edit-form
+        targetZone: meta
+        position: 140
 
     pim-product-model-edit-form-validation:
         module: pim/product-edit-form/attributes/validation
@@ -274,3 +306,9 @@ extensions:
         module: pim/product-edit-form/attribute-filter-missing-required
         parent: pim-product-model-edit-form-attribute-filter
         position: 110
+
+    pim-product-model-edit-form-attribute-filter-at-this-level-filter:
+        module: pim/product-edit-form/attribute-filter-at-this-level
+        parent: pim-product-model-edit-form-attribute-filter
+        targetZone: self
+        position: 120

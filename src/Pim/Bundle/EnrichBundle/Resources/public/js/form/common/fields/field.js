@@ -31,6 +31,7 @@ define([
         elements: {},
         fieldName: null,
         errors: [],
+        readOnly: false,
 
         /**
          * {@inheritdoc}
@@ -43,6 +44,7 @@ define([
             }
 
             this.fieldName = this.config.fieldName;
+            this.readOnly = this.config.readOnly || false;
             this.errors = [];
 
             BaseForm.prototype.initialize.apply(this, arguments);
@@ -118,6 +120,8 @@ define([
                 this.renderExtensions();
                 this.delegateEvents();
             }.bind(this));
+
+            return this;
         },
 
         /**
@@ -166,7 +170,7 @@ define([
          */
         getRequiredLabel() {
             return undefined === this.config.requiredLabel
-                ? __('pim_enrich.form.required')
+                ? __('pim_common.required_label')
                 : __(this.config.requiredLabel);
         },
 
@@ -185,7 +189,16 @@ define([
          * @returns {Boolean}
          */
         isReadOnly() {
-            return this.config.readOnly || false;
+            return this.readOnly;
+        },
+
+        /**
+         * Sets the param readOnly of the field
+         *
+         * @param {Boolean} readOnly
+         */
+        setReadOnly(readOnly) {
+            this.readOnly = Boolean(readOnly);
         },
 
         /**

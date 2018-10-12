@@ -2,35 +2,33 @@
 
 namespace spec\Pim\Bundle\EnrichBundle\Normalizer;
 
-use Akeneo\Component\FileStorage\Model\FileInfoInterface;
+use Akeneo\Pim\Enrichment\Bundle\Context\CatalogContext;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Persistence\ObjectManager;
 use PhpSpec\ObjectBehavior;
-use Pim\Bundle\CatalogBundle\Filter\CollectionFilterInterface;
-use Pim\Bundle\EnrichBundle\Doctrine\ORM\Query\AscendantCategories;
-use Pim\Bundle\EnrichBundle\Normalizer\FileNormalizer;
+use Akeneo\Pim\Enrichment\Bundle\Filter\CollectionFilterInterface;
+use Pim\Bundle\EnrichBundle\Normalizer\ImageNormalizer;
 use Pim\Bundle\EnrichBundle\Normalizer\VariantNavigationNormalizer;
 use Pim\Bundle\EnrichBundle\Provider\Form\FormProviderInterface;
 use Pim\Bundle\EnrichBundle\Provider\StructureVersion\StructureVersionProviderInterface;
-use Pim\Bundle\UserBundle\Context\UserContext;
-use Pim\Bundle\VersioningBundle\Manager\VersionManager;
-use Pim\Component\Catalog\Builder\ProductBuilderInterface;
-use Pim\Component\Catalog\Completeness\CompletenessCalculatorInterface;
-use Pim\Component\Catalog\FamilyVariant\EntityWithFamilyVariantAttributesProvider;
-use Pim\Component\Catalog\Localization\Localizer\AttributeConverterInterface;
-use Pim\Component\Catalog\Manager\CompletenessManager;
-use Pim\Component\Catalog\Model\AssociationInterface;
-use Pim\Component\Catalog\Model\AssociationTypeInterface;
-use Pim\Component\Catalog\Model\AttributeInterface;
-use Pim\Component\Catalog\Model\FamilyVariantInterface;
-use Pim\Component\Catalog\Model\GroupInterface;
-use Pim\Component\Catalog\Model\ProductInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Model\ValueInterface;
-use Pim\Component\Catalog\Model\VariantProductInterface;
-use Pim\Component\Catalog\Repository\ChannelRepositoryInterface;
-use Pim\Component\Catalog\Repository\LocaleRepositoryInterface;
-use Pim\Component\Catalog\ValuesFiller\EntityWithFamilyValuesFillerInterface;
+use Akeneo\UserManagement\Bundle\Context\UserContext;
+use Akeneo\Tool\Bundle\VersioningBundle\Manager\VersionManager;
+use Akeneo\Pim\Enrichment\Component\Product\Association\MissingAssociationAdder;
+use Akeneo\Pim\Enrichment\Component\Product\Completeness\CompletenessCalculatorInterface;
+use Akeneo\Pim\Enrichment\Component\Product\EntityWithFamilyVariant\EntityWithFamilyVariantAttributesProvider;
+use Akeneo\Pim\Enrichment\Component\Product\Localization\Localizer\AttributeConverterInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Manager\CompletenessManager;
+use Akeneo\Pim\Enrichment\Component\Product\Model\AssociationInterface;
+use Akeneo\Pim\Structure\Component\Model\AssociationTypeInterface;
+use Akeneo\Pim\Structure\Component\Model\AttributeInterface;
+use Akeneo\Pim\Structure\Component\Model\FamilyVariantInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\GroupInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ValueInterface;
+use Akeneo\Channel\Component\Repository\ChannelRepositoryInterface;
+use Akeneo\Channel\Component\Repository\LocaleRepositoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\ValuesFiller\EntityWithFamilyValuesFillerInterface;
 use Pim\Component\Enrich\Converter\ConverterInterface;
 use Pim\Component\Enrich\Query\AscendantCategoriesInterface;
 use Prophecy\Argument;
@@ -42,6 +40,7 @@ class ProductNormalizerSpec extends ObjectBehavior
         NormalizerInterface $normalizer,
         NormalizerInterface $versionNormalizer,
         VersionManager $versionManager,
+        ImageNormalizer $imageNormalizer,
         LocaleRepositoryInterface $localeRepository,
         StructureVersionProviderInterface $structureVersionProvider,
         FormProviderInterface $formProvider,
@@ -54,17 +53,20 @@ class ProductNormalizerSpec extends ObjectBehavior
         NormalizerInterface $completenessCollectionNormalizer,
         UserContext $userContext,
         CompletenessCalculatorInterface $completenessCalculator,
-        FileNormalizer $fileNormalizer,
-        ProductBuilderInterface $productBuilder,
         EntityWithFamilyValuesFillerInterface $productValuesFiller,
         EntityWithFamilyVariantAttributesProvider $attributesProvider,
         VariantNavigationNormalizer $navigationNormalizer,
-        AscendantCategoriesInterface $ascendantCategories
+        AscendantCategoriesInterface $ascendantCategories,
+        NormalizerInterface $incompleteValuesNormalizer,
+        MissingAssociationAdder $missingAssociationAdder,
+        NormalizerInterface $parentAssociationsNormalizer,
+        CatalogContext $catalogContext
     ) {
         $this->beConstructedWith(
             $normalizer,
             $versionNormalizer,
             $versionManager,
+            $imageNormalizer,
             $localeRepository,
             $structureVersionProvider,
             $formProvider,
@@ -77,12 +79,14 @@ class ProductNormalizerSpec extends ObjectBehavior
             $completenessCollectionNormalizer,
             $userContext,
             $completenessCalculator,
-            $fileNormalizer,
-            $productBuilder,
             $productValuesFiller,
             $attributesProvider,
             $navigationNormalizer,
-            $ascendantCategories
+            $ascendantCategories,
+            $incompleteValuesNormalizer,
+            $missingAssociationAdder,
+            $parentAssociationsNormalizer,
+            $catalogContext
         );
     }
 
@@ -95,6 +99,7 @@ class ProductNormalizerSpec extends ObjectBehavior
         $normalizer,
         $versionNormalizer,
         $versionManager,
+        $imageNormalizer,
         $localeRepository,
         $structureVersionProvider,
         $formProvider,
@@ -103,20 +108,21 @@ class ProductNormalizerSpec extends ObjectBehavior
         $channelRepository,
         $userContext,
         $collectionFilter,
-        $fileNormalizer,
-        $productBuilder,
         $productValuesFiller,
+        $incompleteValuesNormalizer,
+        $missingAssociationAdder,
         ProductInterface $mug,
         AssociationInterface $upsell,
         AssociationTypeInterface $groupType,
         GroupInterface $group,
         ArrayCollection $groups,
-        ValueInterface $image,
-        FileInfoInterface $dataImage
+        ValueInterface $image
     ) {
         $options = [
             'decimal_separator' => ',',
             'date_format'       => 'dd/MM/yyyy',
+            'locale'            => 'en_US',
+            'channel'           => 'mobile',
         ];
 
         $productNormalized = [
@@ -142,6 +148,7 @@ class ProductNormalizerSpec extends ObjectBehavior
             'picture'             => [['data' => 'a/b/c/my_picture.jpg', 'locale' => null, 'scope' => null]]
         ];
 
+        $userContext->getUserTimezone()->willReturn('Pacific/Kiritimati');
         $normalizer->normalize($mug, 'standard', $options)->willReturn($productNormalized);
         $localizedConverter->convertToLocalizedFormats($productNormalized['values'], $options)->willReturn($valuesLocalized);
 
@@ -162,18 +169,20 @@ class ProductNormalizerSpec extends ObjectBehavior
 
         $productValueConverter->convert($valuesLocalized)->willReturn($valuesConverted);
 
+        $mug->isVariant()->willReturn(false);
         $mug->getId()->willReturn(12);
         $versionManager->getOldestLogEntry($mug)->willReturn('create_version');
-        $versionNormalizer->normalize('create_version', 'internal_api')->willReturn('normalized_create_version');
+        $versionNormalizer->normalize('create_version', 'internal_api', ['timezone' => 'Pacific/Kiritimati'])
+            ->willReturn('normalized_create_version');
         $versionManager->getNewestLogEntry($mug)->willReturn('update_version');
-        $versionNormalizer->normalize('update_version', 'internal_api')->willReturn('normalized_update_version');
+        $versionNormalizer->normalize('update_version', 'internal_api', ['timezone' => 'Pacific/Kiritimati'])
+            ->willReturn('normalized_update_version');
 
         $localeRepository->getActivatedLocaleCodes()->willReturn(['en_US', 'fr_FR']);
-        $mug->getLabel('en_US')->willReturn('A nice Mug!');
-        $mug->getLabel('fr_FR')->willReturn('Un très beau Mug !');
+        $mug->getLabel('en_US', 'mobile')->willReturn('A nice Mug!');
+        $mug->getLabel('fr_FR', 'mobile')->willReturn('Un très beau Mug !');
         $mug->getImage()->willReturn($image);
-        $image->getData()->willReturn($dataImage);
-        $fileNormalizer->normalize($dataImage, Argument::any(), Argument::any())->willReturn([
+        $imageNormalizer->normalize($image, Argument::any())->willReturn([
             'filePath'         => '/p/i/m/4/all.png',
             'originalFileName' => 'all.png',
         ]);
@@ -190,8 +199,10 @@ class ProductNormalizerSpec extends ObjectBehavior
         $structureVersionProvider->getStructureVersion()->willReturn(12);
         $formProvider->getForm($mug)->willReturn('product-edit-form');
 
-        $productBuilder->addMissingAssociations($mug)->shouldBeCalled();
+        $missingAssociationAdder->addMissingAssociations($mug)->shouldBeCalled();
         $productValuesFiller->fillMissingValues($mug)->shouldBeCalled();
+
+        $incompleteValuesNormalizer->normalize($mug)->willReturn('INCOMPLETE VALUES');
 
         $this->normalize($mug, 'internal_api', $options)->shouldReturn(
             [
@@ -199,6 +210,7 @@ class ProductNormalizerSpec extends ObjectBehavior
                 'categories' => ['kitchen'],
                 'family'     => '',
                 'values'     => $valuesConverted,
+                'parent_associations' => null,
                 'meta'       => [
                     'form'              => 'product-edit-form',
                     'id'                => 12,
@@ -207,6 +219,7 @@ class ProductNormalizerSpec extends ObjectBehavior
                     'model_type'        => 'product',
                     'structure_version' => 12,
                     'completenesses'    => null,
+                    'required_missing_attributes' => 'INCOMPLETE VALUES',
                     'image'             => [
                         'filePath'         => '/p/i/m/4/all.png',
                         'originalFileName' => 'all.png',
@@ -215,8 +228,10 @@ class ProductNormalizerSpec extends ObjectBehavior
                         'en_US' => 'A nice Mug!',
                         'fr_FR' => 'Un très beau Mug !'
                     ],
-                    'associations'      => [
-                        'group' => ['groupIds' => [12]]
+                    'associations' => [
+                        'group' => [
+                            'groupIds' => [12]
+                        ]
                     ],
                     'ascendant_category_ids'    => [],
                     'variant_navigation'        => [],
@@ -234,6 +249,7 @@ class ProductNormalizerSpec extends ObjectBehavior
         $normalizer,
         $versionNormalizer,
         $versionManager,
+        $imageNormalizer,
         $localeRepository,
         $structureVersionProvider,
         $formProvider,
@@ -242,19 +258,18 @@ class ProductNormalizerSpec extends ObjectBehavior
         $channelRepository,
         $userContext,
         $collectionFilter,
-        $fileNormalizer,
-        $productBuilder,
         $productValuesFiller,
         $navigationNormalizer,
         $attributesProvider,
         $ascendantCategories,
-        VariantProductInterface $mug,
+        $incompleteValuesNormalizer,
+        $missingAssociationAdder,
+        ProductInterface $mug,
         AssociationInterface $upsell,
         AssociationTypeInterface $groupType,
         GroupInterface $group,
         ArrayCollection $groups,
         ValueInterface $image,
-        FileInfoInterface $dataImage,
         FamilyVariantInterface $familyVariant,
         AttributeInterface $color,
         AttributeInterface $size,
@@ -264,6 +279,8 @@ class ProductNormalizerSpec extends ObjectBehavior
         $options = [
             'decimal_separator' => ',',
             'date_format'       => 'dd/MM/yyyy',
+            'locale'            => 'en_US',
+            'channel'           => 'mobile',
         ];
 
         $productNormalized = [
@@ -289,6 +306,8 @@ class ProductNormalizerSpec extends ObjectBehavior
             'picture'             => [['data' => 'a/b/c/my_picture.jpg', 'locale' => null, 'scope' => null]]
         ];
 
+        $mug->isVariant()->willReturn(true);
+        $userContext->getUserTimezone()->willReturn('Pacific/Kiritimati');
         $normalizer->normalize($mug, 'standard', $options)->willReturn($productNormalized);
         $localizedConverter->convertToLocalizedFormats($productNormalized['values'], $options)->willReturn($valuesLocalized);
 
@@ -311,16 +330,17 @@ class ProductNormalizerSpec extends ObjectBehavior
 
         $mug->getId()->willReturn(12);
         $versionManager->getOldestLogEntry($mug)->willReturn('create_version');
-        $versionNormalizer->normalize('create_version', 'internal_api')->willReturn('normalized_create_version');
+        $versionNormalizer->normalize('create_version', 'internal_api', ['timezone' => 'Pacific/Kiritimati'])
+            ->willReturn('normalized_create_version');
         $versionManager->getNewestLogEntry($mug)->willReturn('update_version');
-        $versionNormalizer->normalize('update_version', 'internal_api')->willReturn('normalized_update_version');
+        $versionNormalizer->normalize('update_version', 'internal_api', ['timezone' => 'Pacific/Kiritimati'])
+            ->willReturn('normalized_update_version');
 
         $localeRepository->getActivatedLocaleCodes()->willReturn(['en_US', 'fr_FR']);
-        $mug->getLabel('en_US')->willReturn('A nice Mug!');
-        $mug->getLabel('fr_FR')->willReturn('Un très beau Mug !');
+        $mug->getLabel('en_US', 'mobile')->willReturn('A nice Mug!');
+        $mug->getLabel('fr_FR', 'mobile')->willReturn('Un très beau Mug !');
         $mug->getImage()->willReturn($image);
-        $image->getData()->willReturn($dataImage);
-        $fileNormalizer->normalize($dataImage, Argument::any(), Argument::any())->willReturn([
+        $imageNormalizer->normalize($image, Argument::any())->willReturn([
             'filePath'         => '/p/i/m/4/all.png',
             'originalFileName' => 'all.png',
         ]);
@@ -337,7 +357,7 @@ class ProductNormalizerSpec extends ObjectBehavior
         $structureVersionProvider->getStructureVersion()->willReturn(12);
         $formProvider->getForm($mug)->willReturn('product-edit-form');
 
-        $productBuilder->addMissingAssociations($mug)->shouldBeCalled();
+        $missingAssociationAdder->addMissingAssociations($mug)->shouldBeCalled();
         $productValuesFiller->fillMissingValues($mug)->shouldBeCalled();
 
         $navigationNormalizer->normalize($mug, 'internal_api', $options)
@@ -362,6 +382,7 @@ class ProductNormalizerSpec extends ObjectBehavior
         $description->getCode()->willReturn('description');
 
         $ascendantCategories->getCategoryIds($mug)->willReturn([42]);
+        $incompleteValuesNormalizer->normalize($mug)->willReturn('INCOMPLETE VALUES');
 
         $this->normalize($mug, 'internal_api', $options)->shouldReturn(
             [
@@ -369,6 +390,7 @@ class ProductNormalizerSpec extends ObjectBehavior
                 'categories' => ['kitchen'],
                 'family'     => '',
                 'values'     => $valuesConverted,
+                'parent_associations' => null,
                 'meta'       => [
                     'form'              => 'product-edit-form',
                     'id'                => 12,
@@ -377,6 +399,7 @@ class ProductNormalizerSpec extends ObjectBehavior
                     'model_type'        => 'product',
                     'structure_version' => 12,
                     'completenesses'    => null,
+                    'required_missing_attributes' => 'INCOMPLETE VALUES',
                     'image'             => [
                         'filePath'         => '/p/i/m/4/all.png',
                         'originalFileName' => 'all.png',
@@ -385,8 +408,10 @@ class ProductNormalizerSpec extends ObjectBehavior
                         'en_US' => 'A nice Mug!',
                         'fr_FR' => 'Un très beau Mug !'
                     ],
-                    'associations'      => [
-                        'group' => ['groupIds' => [12]]
+                    'associations' => [
+                        'group' => [
+                            'groupIds' => [12]
+                        ]
                     ],
                     'ascendant_category_ids'    => [42],
                     'variant_navigation' => ['NAVIGATION NORMALIZED'],

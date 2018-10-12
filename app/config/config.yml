@@ -1,12 +1,11 @@
 imports:
+    - { resource: '@PimEnrichBundle/Resources/config/pim.yml' }
     - { resource: pim_parameters.yml }
     - { resource: parameters.yml }
     - { resource: security.yml }
-    - { resource: '@PimEnrichBundle/Resources/config/pim.yml' }
 
 framework:
-    #esi:             ~
-    translator:      { fallback: en }
+    translator:      { fallback: en_US }
     secret:          "%secret%"
     router:
         resource: "%kernel.root_dir%/config/routing.yml"
@@ -57,10 +56,14 @@ swiftmailer:
     password:                 "%mailer_password%"
     spool:                    { type: memory }
 
-pim_reference_data:
-    fabrics:
-        class: Acme\Bundle\AppBundle\Entity\Fabric
-        type: multi
-    color:
-        class: Acme\Bundle\AppBundle\Entity\Color
-        type: simple
+akeneo_pim_structure:
+    reference_data:
+        fabrics:
+            class: Acme\Bundle\AppBundle\Entity\Fabric
+            type: multi
+        color:
+            class: Acme\Bundle\AppBundle\Entity\Color
+            type: simple
+
+parameters:
+    pim_ce_dev_src_folder_location: '%kernel.project_dir%'

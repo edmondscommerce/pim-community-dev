@@ -120,7 +120,7 @@ define([
             var container = $('<span class="AknFieldContainer-contextContainer AknButtonList filter-context">');
 
             if (attribute.scopable) {
-                var scopeSwitcher = new ScopeSwitcher();
+                var scopeSwitcher = new ScopeSwitcher({config: {context: 'base_product'}});
                 scopeSwitcher.setDisplayInline(false);
                 scopeSwitcher.setDisplayLabel(false);
 
@@ -141,7 +141,7 @@ define([
             }
 
             if (attribute.localizable) {
-                var localeSwitcher = new LocaleSwitcher();
+                var localeSwitcher = new LocaleSwitcher({config: {context: 'base_product'}});
                 localeSwitcher.setDisplayInline(false);
                 localeSwitcher.setDisplayLabel(false);
 
@@ -251,6 +251,25 @@ define([
             } else {
                 this.setLocale(localeEvent.localeCode, {silent: true});
             }
+        },
+
+        /**
+         * Returns the list of the operator choices with their translations.
+         *
+         * @returns {object}
+         */
+        getLabelledOperatorChoices(shortName) {
+            let result = {};
+            this.config.operators.forEach((operator) => {
+                const key = 'pim_enrich.export.product.filter.' + shortName + '.operators.' + operator;
+                let translation = __(key);
+                if (translation === key) {
+                    translation = __('pim_common.operators.' + operator);
+                }
+                result[operator] = translation;
+            });
+
+            return result;
         }
     });
 });

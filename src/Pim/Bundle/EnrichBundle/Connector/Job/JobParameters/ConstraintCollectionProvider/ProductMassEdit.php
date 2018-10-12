@@ -2,8 +2,8 @@
 
 namespace Pim\Bundle\EnrichBundle\Connector\Job\JobParameters\ConstraintCollectionProvider;
 
-use Akeneo\Component\Batch\Job\JobInterface;
-use Akeneo\Component\Batch\Job\JobParameters\ConstraintCollectionProviderInterface;
+use Akeneo\Tool\Component\Batch\Job\JobInterface;
+use Akeneo\Tool\Component\Batch\Job\JobParameters\ConstraintCollectionProviderInterface;
 use Symfony\Component\Validator\Constraints\Collection;
 use Symfony\Component\Validator\Constraints\NotNull;
 use Symfony\Component\Validator\Constraints\Type;
@@ -40,7 +40,7 @@ class ProductMassEdit implements ConstraintCollectionProviderInterface
                     'actions'            => new NotNull(),
                     'realTimeVersioning' => new Type('bool'),
                     'user_to_notify'     => new Type('string'),
-                    'is_user_authenticated' => new Type('bool'),
+                    'is_user_authenticated' => new Type('bool')
                 ]
             ]
         );

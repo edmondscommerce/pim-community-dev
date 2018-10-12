@@ -2,21 +2,24 @@
 
 namespace spec\Pim\Bundle\EnrichBundle\Connector\Processor\QuickExport;
 
-use Akeneo\Component\Batch\Job\JobParameters;
-use Akeneo\Component\Batch\Model\JobExecution;
-use Akeneo\Component\Batch\Model\StepExecution;
-use Akeneo\Component\StorageUtils\Detacher\ObjectDetacherInterface;
+use Akeneo\Tool\Component\Batch\Item\ExecutionContext;
+use Akeneo\Tool\Component\Batch\Job\JobInterface;
+use Akeneo\Tool\Component\Batch\Job\JobParameters;
+use Akeneo\Tool\Component\Batch\Model\JobExecution;
+use Akeneo\Tool\Component\Batch\Model\StepExecution;
+use Akeneo\Tool\Component\StorageUtils\Detacher\ObjectDetacherInterface;
 use PhpSpec\ObjectBehavior;
-use Pim\Bundle\UserBundle\Entity\UserInterface;
-use Pim\Component\Catalog\AttributeTypes;
-use Pim\Component\Catalog\Model\AttributeInterface;
-use Pim\Component\Catalog\Model\ChannelInterface;
-use Pim\Component\Catalog\Model\ProductInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Repository\AttributeRepositoryInterface;
-use Pim\Component\Catalog\Repository\ChannelRepositoryInterface;
-use Pim\Component\Catalog\ValuesFiller\EntityWithFamilyValuesFillerInterface;
-use Pim\Component\Connector\Processor\BulkMediaFetcher;
+use Akeneo\UserManagement\Component\Model\UserInterface;
+use Akeneo\Pim\Structure\Component\AttributeTypes;
+use Akeneo\Pim\Structure\Component\Model\AttributeInterface;
+use Akeneo\Channel\Component\Model\ChannelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ValueCollectionInterface;
+use Akeneo\Pim\Structure\Component\Repository\AttributeRepositoryInterface;
+use Akeneo\Channel\Component\Repository\ChannelRepositoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\ValuesFiller\EntityWithFamilyValuesFillerInterface;
+use Akeneo\Tool\Component\Connector\Processor\BulkMediaFetcher;
 use Prophecy\Argument;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
@@ -222,6 +225,132 @@ class ProductAndProductModelProcessorSpec extends ObjectBehavior
             'code' => 'foo',
             'family_variant' => 'shoes',
             'description-en_US' => 'Shoes'
+        ]);
+    }
+
+    function it_process_product_with_selected_properties_and_with_media(
+        $stepExecution,
+        $userProvider,
+        $tokenStorage,
+        $channelRepository,
+        $attributeRepository,
+        $normalizer,
+        $detacher,
+        $bulkMediaFetcher,
+        ProductInterface $product,
+        JobExecution $jobExecution,
+        UserInterface $user,
+        JobParameters $jobParameters,
+        ChannelInterface $channel,
+        AttributeInterface $attribute,
+        ExecutionContext $executionContext,
+        ValueCollectionInterface $valueCollection,
+        ValueCollectionInterface $filteredValues
+    ) {
+        $stepExecution->getJobExecution()->willReturn($jobExecution);
+        $jobExecution->getUser()->willReturn('admin');
+        $userProvider->loadUserByUsername('admin')->willReturn($user);
+        $user->getRoles()->willReturn([]);
+        $tokenStorage->setToken(Argument::type(UsernamePasswordToken::class))->shouldBeCalled();
+
+        $stepExecution->getJobParameters()->willReturn($jobParameters);
+        $jobParameters->has('scope')->willReturn(true);
+        $jobParameters->get('scope')->willReturn('ecommerce');
+        $channelRepository->findOneByIdentifier('ecommerce')->willReturn($channel);
+        $channel->getLocaleCodes()->willReturn(['en_US']);
+
+        $jobParameters->get('selected_properties')->willReturn(['identifier', 'family', 'description-en_US']);
+        $attributeRepository->findOneBy(['type' => AttributeTypes::IDENTIFIER])->willReturn($attribute);
+        $attribute->getCode()->willReturn('sku');
+
+        $jobParameters->has('with_media')->willReturn(true);
+        $jobParameters->get('with_media')->willReturn(true);
+
+        $jobExecution->getExecutionContext()->willReturn($executionContext);
+        $executionContext->get(JobInterface::WORKING_DIRECTORY_PARAMETER)->willReturn('/tmp');
+        $product->getIdentifier()->willReturn('sandal');
+        $product->getValues()->willReturn($valueCollection);
+
+        $valueCollection->filter(Argument::any())->willReturn($filteredValues);
+        $bulkMediaFetcher->fetchAll($filteredValues, '/tmp', 'sandal')->shouldBeCalled();
+        $bulkMediaFetcher->getErrors()->willReturn([]);
+
+        $detacher->detach($product)->shouldBeCalled();
+
+        $normalizer->normalize($product, 'standard', Argument::any())->willReturn([
+            'sku' => 'foo',
+            'family' => 'shoes',
+            'description-en_US' => 'Shoes',
+            'size' => '42'
+        ]);
+
+        $this->process($product)->shouldReturn([
+            'sku' => 'foo',
+            'family' => 'shoes',
+            'description-en_US' => 'Shoes'
+        ]);
+    }
+
+    function it_process_product_without_selected_properties_but_with_media(
+        $stepExecution,
+        $userProvider,
+        $tokenStorage,
+        $channelRepository,
+        $attributeRepository,
+        $normalizer,
+        $detacher,
+        $bulkMediaFetcher,
+        ProductInterface $product,
+        JobExecution $jobExecution,
+        UserInterface $user,
+        JobParameters $jobParameters,
+        ChannelInterface $channel,
+        AttributeInterface $attribute,
+        ExecutionContext $executionContext,
+        ValueCollectionInterface $valueCollection
+    ) {
+        $stepExecution->getJobExecution()->willReturn($jobExecution);
+        $jobExecution->getUser()->willReturn('admin');
+        $userProvider->loadUserByUsername('admin')->willReturn($user);
+        $user->getRoles()->willReturn([]);
+        $tokenStorage->setToken(Argument::type(UsernamePasswordToken::class))->shouldBeCalled();
+
+        $stepExecution->getJobParameters()->willReturn($jobParameters);
+        $jobParameters->has('scope')->willReturn(true);
+        $jobParameters->get('scope')->willReturn('ecommerce');
+        $channelRepository->findOneByIdentifier('ecommerce')->willReturn($channel);
+        $channel->getLocaleCodes()->willReturn(['en_US']);
+
+        $jobParameters->get('selected_properties')->willReturn(null);
+        $attributeRepository->findOneBy(['type' => AttributeTypes::IDENTIFIER])->willReturn($attribute);
+        $attribute->getCode()->willReturn('sku');
+
+        $jobParameters->has('with_media')->willReturn(true);
+        $jobParameters->get('with_media')->willReturn(true);
+
+        $jobExecution->getExecutionContext()->willReturn($executionContext);
+        $executionContext->get(JobInterface::WORKING_DIRECTORY_PARAMETER)->willReturn('/tmp');
+        $product->getIdentifier()->willReturn('sandal');
+        $product->getValues()->willReturn($valueCollection);
+
+        $valueCollection->filter(Argument::any())->shouldNotBeCalled();
+        $bulkMediaFetcher->fetchAll($valueCollection, '/tmp', 'sandal')->shouldBeCalled();
+        $bulkMediaFetcher->getErrors()->willReturn([]);
+
+        $detacher->detach($product)->shouldBeCalled();
+
+        $normalizer->normalize($product, 'standard', Argument::any())->willReturn([
+            'sku' => 'foo',
+            'family' => 'shoes',
+            'description-en_US' => 'Shoes',
+            'size' => '42'
+        ]);
+
+        $this->process($product)->shouldReturn([
+            'sku' => 'foo',
+            'family' => 'shoes',
+            'description-en_US' => 'Shoes',
+            'size' => '42'
         ]);
     }
 }

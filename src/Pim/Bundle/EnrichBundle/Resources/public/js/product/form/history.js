@@ -64,7 +64,7 @@ define(
             configure: function () {
                 this.trigger('tab:register', {
                     code: (undefined === this.config.tabCode) ? this.code : this.config.tabCode,
-                    label: __('pim_enrich.form.product.panel.history.title')
+                    label: __('pim_common.history')
                 });
 
                 this.listenTo(this.getRoot(), 'pim_enrich:form:entity:post_update', this.update);
@@ -150,10 +150,6 @@ define(
             getHistoryFetcher: function (entity) {
                 if ('product_model' === entity.meta.model_type) {
                     return FetcherRegistry.getFetcher('product-model-history');
-                }
-
-                if (null !== entity.meta.family_variant) {
-                    return FetcherRegistry.getFetcher('variant-product-history');
                 }
 
                 return FetcherRegistry.getFetcher('product-history');

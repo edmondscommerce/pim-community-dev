@@ -3,21 +3,27 @@ declare(strict_types=1);
 
 namespace Pim\Bundle\EnrichBundle\Controller\Rest;
 
-use Akeneo\Component\StorageUtils\Factory\SimpleFactoryInterface;
-use Akeneo\Component\StorageUtils\Saver\SaverInterface;
-use Akeneo\Component\StorageUtils\Updater\ObjectUpdaterInterface;
+use Akeneo\Pim\Enrichment\Bundle\Filter\ObjectFilterInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Comparator\Filter\EntityWithValuesFilter;
+use Akeneo\Pim\Enrichment\Component\Product\Localization\Localizer\AttributeConverterInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\ProductModel\Filter\AttributeFilterInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Repository\ProductModelRepositoryInterface;
+use Akeneo\Pim\Structure\Component\Model\FamilyVariantInterface;
+use Akeneo\Pim\Structure\Component\Repository\FamilyVariantRepositoryInterface;
+use Akeneo\Tool\Component\StorageUtils\Factory\SimpleFactoryInterface;
+use Akeneo\Tool\Component\StorageUtils\Remover\RemoverInterface;
+use Akeneo\Tool\Component\StorageUtils\Saver\SaverInterface;
+use Akeneo\Tool\Component\StorageUtils\Updater\ObjectUpdaterInterface;
+use Akeneo\UserManagement\Bundle\Context\UserContext;
 use Oro\Bundle\SecurityBundle\Annotation\AclAncestor;
-use Pim\Bundle\CatalogBundle\Filter\ObjectFilterInterface;
 use Pim\Bundle\EnrichBundle\Normalizer\EntityWithFamilyVariantNormalizer;
-use Pim\Bundle\UserBundle\Context\UserContext;
-use Pim\Component\Catalog\Comparator\Filter\EntityWithValuesFilter;
-use Pim\Component\Catalog\Localization\Localizer\AttributeConverterInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Model\VariantProductInterface;
-use Pim\Component\Catalog\Repository\ProductModelRepositoryInterface;
 use Pim\Component\Enrich\Converter\ConverterInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -29,6 +35,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  */
 class ProductModelController
 {
+    private const PRODUCT_MODELS_LIMIT = 20;
+
     /** @var NormalizerInterface */
     private $normalizer;
 
@@ -53,6 +61,9 @@ class ProductModelController
     /** @var ObjectUpdaterInterface */
     private $productModelUpdater;
 
+    /** @var RemoverInterface */
+    private $productModelRemover;
+
     /** @var ValidatorInterface */
     private $validator;
 
@@ -71,6 +82,12 @@ class ProductModelController
     /** @var NormalizerInterface */
     private $violationNormalizer;
 
+    /** @var FamilyVariantRepositoryInterface */
+    private $familyVariantRepository;
+
+    /** @var AttributeFilterInterface */
+    private $productModelAttributeFilter;
+
     /**
      * @param ProductModelRepositoryInterface   $productModelRepository
      * @param NormalizerInterface               $normalizer
@@ -80,12 +97,15 @@ class ProductModelController
      * @param EntityWithValuesFilter            $emptyValuesFilter
      * @param ConverterInterface                $productValueConverter
      * @param ObjectUpdaterInterface            $productModelUpdater
+     * @param RemoverInterface                  $productModelRemover
      * @param ValidatorInterface                $validator
      * @param SaverInterface                    $productModelSaver
      * @param NormalizerInterface               $constraintViolationNormalizer
      * @param EntityWithFamilyVariantNormalizer $entityWithFamilyVariantNormalizer
      * @param SimpleFactoryInterface            $productModelFactory
      * @param NormalizerInterface               $violationNormalizer
+     * @param FamilyVariantRepositoryInterface  $familyVariantRepository
+     * @param AttributeFilterInterface          $productModelAttributeFilter
      */
     public function __construct(
         ProductModelRepositoryInterface $productModelRepository,
@@ -96,27 +116,33 @@ class ProductModelController
         EntityWithValuesFilter $emptyValuesFilter,
         ConverterInterface $productValueConverter,
         ObjectUpdaterInterface $productModelUpdater,
+        RemoverInterface $productModelRemover,
         ValidatorInterface $validator,
         SaverInterface $productModelSaver,
         NormalizerInterface $constraintViolationNormalizer,
         EntityWithFamilyVariantNormalizer $entityWithFamilyVariantNormalizer,
         SimpleFactoryInterface $productModelFactory,
-        NormalizerInterface $violationNormalizer
+        NormalizerInterface $violationNormalizer,
+        FamilyVariantRepositoryInterface $familyVariantRepository,
+        AttributeFilterInterface $productModelAttributeFilter
     ) {
-        $this->productModelRepository        = $productModelRepository;
-        $this->normalizer                    = $normalizer;
-        $this->userContext                   = $userContext;
-        $this->objectFilter                  = $objectFilter;
-        $this->localizedConverter            = $localizedConverter;
-        $this->emptyValuesFilter             = $emptyValuesFilter;
-        $this->productValueConverter         = $productValueConverter;
-        $this->productModelUpdater           = $productModelUpdater;
-        $this->validator                     = $validator;
-        $this->productModelSaver             = $productModelSaver;
+        $this->productModelRepository = $productModelRepository;
+        $this->normalizer = $normalizer;
+        $this->userContext = $userContext;
+        $this->objectFilter = $objectFilter;
+        $this->localizedConverter = $localizedConverter;
+        $this->emptyValuesFilter = $emptyValuesFilter;
+        $this->productValueConverter = $productValueConverter;
+        $this->productModelUpdater = $productModelUpdater;
+        $this->productModelRemover = $productModelRemover;
+        $this->validator = $validator;
+        $this->productModelSaver = $productModelSaver;
         $this->constraintViolationNormalizer = $constraintViolationNormalizer;
         $this->entityWithFamilyVariantNormalizer = $entityWithFamilyVariantNormalizer;
-        $this->productModelFactory           = $productModelFactory;
+        $this->productModelFactory = $productModelFactory;
         $this->violationNormalizer = $violationNormalizer;
+        $this->familyVariantRepository = $familyVariantRepository;
+        $this->productModelAttributeFilter = $productModelAttributeFilter;
     }
 
     /**
@@ -128,15 +154,7 @@ class ProductModelController
      */
     public function getAction(int $id): JsonResponse
     {
-        $productModel = $this->productModelRepository->find($id);
-        $cantView = $this->objectFilter->filterObject($productModel, 'pim.internal_api.product.view');
-
-        if (null === $productModel || true === $cantView) {
-            throw new NotFoundHttpException(
-                sprintf('Product model with id %s could not be found.', $id)
-            );
-        }
-
+        $productModel = $this->findProductModelOr404($id);
         $normalizedProductModel = $this->normalizeProductModel($productModel);
 
         return new JsonResponse($normalizedProductModel);
@@ -166,14 +184,37 @@ class ProductModelController
     }
 
     /**
+     * Returns a set of product models from identifiers parameter
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
+    public function indexAction(Request $request): JsonResponse
+    {
+        $productModelIdentifiers = explode(',', $request->get('identifiers'));
+        $productModels = $this->productModelRepository->findByIdentifiers($productModelIdentifiers);
+
+        $normalizedProductModels = array_map(function ($productModel) {
+            return $this->normalizeProductModel($productModel);
+        }, $productModels);
+
+        return new JsonResponse($normalizedProductModels);
+    }
+
+    /**
      * @param Request $request
      *
      * @AclAncestor("pim_enrich_product_model_create")
      *
-     * @return JsonResponse
+     * @return Response
      */
-    public function createAction(Request $request): JsonResponse
+    public function createAction(Request $request): Response
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         $productModel = $this->productModelFactory->create();
         $content = json_decode($request->getContent(), true);
 
@@ -195,15 +236,9 @@ class ProductModelController
         }
 
         $this->productModelSaver->save($productModel);
+        $normalizedProductModel = $this->normalizeProductModel($productModel);
 
-        $normalizationContext = $this->userContext->toArray() + ['disable_grouping_separator' => true];
-        $normalizedProduct = $this->normalizer->normalize(
-            $productModel,
-            'internal_api',
-            $normalizationContext
-        );
-
-        return new JsonResponse($normalizedProduct);
+        return new JsonResponse($normalizedProductModel);
     }
 
     /**
@@ -212,11 +247,15 @@ class ProductModelController
      *
      * @AclAncestor("pim_enrich_product_model_edit_attributes")
      *
-     * @return JsonResponse
+     * @return Response
      */
-    public function postAction(Request $request, int $id): JsonResponse
+    public function postAction(Request $request, int $id): Response
     {
-        $productModel = $this->productModelRepository->find($id);
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
+        $productModel = $this->findProductModelOr404($id);
         $data = json_decode($request->getContent(), true);
 
         $this->updateProductModel($productModel, $data);
@@ -226,15 +265,9 @@ class ProductModelController
 
         if (0 === $violations->count()) {
             $this->productModelSaver->save($productModel);
+            $normalizedProductModel = $this->normalizeProductModel($productModel);
 
-            $normalizationContext = $this->userContext->toArray() + ['disable_grouping_separator' => true];
-            $normalizedProduct = $this->normalizer->normalize(
-                $productModel,
-                'internal_api',
-                $normalizationContext
-            );
-
-            return new JsonResponse($normalizedProduct);
+            return new JsonResponse($normalizedProductModel);
         }
 
         $normalizedViolations = [];
@@ -258,12 +291,7 @@ class ProductModelController
      */
     public function childrenAction(Request $request): JsonResponse
     {
-        $parentId = $request->query->get('id');
-        $parent = $this->productModelRepository->find($parentId);
-        if (null === $parent) {
-            throw new NotFoundHttpException(sprintf('ProductModel with id "%s" not found', $parentId));
-        }
-
+        $parent = $this->findProductModelOr404($request->get('id'));
         $children = $this->productModelRepository->findChildrenProductModels($parent);
         if (empty($children)) {
             $children = $this->productModelRepository->findChildrenProducts($parent);
@@ -271,19 +299,129 @@ class ProductModelController
 
         $normalizedChildren = [];
         foreach ($children as $child) {
-            if (!$child instanceof ProductModelInterface && !$child instanceof VariantProductInterface) {
+            if (!$child instanceof ProductModelInterface && !$child instanceof ProductInterface) {
                 throw new \LogicException(sprintf(
                     'Child of a product model must be of class "%s" or "%s", "%s" received.',
                     ProductModelInterface::class,
-                    VariantProductInterface::class,
+                    ProductInterface::class,
                     get_class($child)
                 ));
             }
 
-            $normalizedChildren[] = $this->entityWithFamilyVariantNormalizer->normalize($child, 'internal_api');
+            $normalizedChildren[] = $this->entityWithFamilyVariantNormalizer->normalize(
+                $child,
+                'internal_api',
+                ['locale' => $this->userContext->getCurrentLocaleCode()]
+            );
         }
 
         return new JsonResponse($normalizedChildren);
+    }
+
+    /**
+     * Returns the last level of product models belonging to a Family Variant with a given search code
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
+    public function searchLastLevelProductModelByCode(Request $request): JsonResponse
+    {
+        $search = $request->query->get('search');
+        $options = $request->query->get('options');
+        $familyVariantCode = $options['family_variant'];
+        $page = intval($options['page']) - 1;
+        $familyVariant = $this->getFamilyVariant($familyVariantCode);
+
+        $productModels = $this->productModelRepository->searchLastLevelByCode(
+            $familyVariant,
+            $search,
+            self::PRODUCT_MODELS_LIMIT,
+            $page
+        );
+
+        $normalizedProductModels = $this->buildNormalizedProductModels($productModels);
+
+        return new JsonResponse($normalizedProductModels);
+    }
+
+    /**
+     * Returns all the product models (sub and root) of a family variant
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
+    public function listFamilyVariantProductModels(Request $request)
+    {
+        $search = trim($request->query->get('search'));
+        $options = $request->query->get('options');
+        $familyVariant = $this->getFamilyVariant($options['family_variant']);
+
+        $productModels = $this->productModelRepository->findProductModelsForFamilyVariant($familyVariant, $search);
+        $normalizedProductModels = $this->buildNormalizedProductModels($productModels);
+
+        return new JsonResponse($normalizedProductModels);
+    }
+
+    /**
+     * Remove product model
+     *
+     * @param Request $request
+     * @param int $id
+     *
+     * @AclAncestor("pim_enrich_product_model_remove")
+     *
+     * @return Response
+     */
+    public function removeAction(Request $request, $id): Response
+    {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
+        $productModel = $this->findProductModelOr404($id);
+        $this->productModelRemover->remove($productModel);
+
+        return new JsonResponse();
+    }
+
+    /**
+     * Returns the family variant object from a family variant code
+     *
+     * @param string $familyVariantCode
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @return FamilyVariantInterface
+     */
+    private function getFamilyVariant(string $familyVariantCode): FamilyVariantInterface
+    {
+        $familyVariant = $this->familyVariantRepository->findOneByIdentifier($familyVariantCode);
+        if (null === $familyVariant) {
+            throw new \InvalidArgumentException(sprintf('Unknown family variant code "%s"', $familyVariantCode));
+        }
+
+        return $familyVariant;
+    }
+
+    /**
+     * Returns an array of normalized product models from an array of product model objects
+     *
+     * @param array $productModels
+     *
+     * @return array
+     */
+    private function buildNormalizedProductModels(array $productModels): array
+    {
+        $normalizedProductModels = [];
+        foreach ($productModels as $productModel) {
+            $normalizedProductModels[$productModel->getCode()] = $this->normalizeProductModel(
+                $productModel
+            );
+        }
+
+        return $normalizedProductModels;
     }
 
     /**
@@ -293,10 +431,7 @@ class ProductModelController
      */
     private function normalizeProductModel(ProductModelInterface $productModel): array
     {
-        $normalizationContext = $this->userContext->toArray() + [
-                'filter_types'               => ['pim.internal_api.product_value.view'],
-                'disable_grouping_separator' => true
-            ];
+        $normalizationContext = $this->userContext->toArray() + ['filter_types' => []];
 
         return $this->normalizer->normalize(
             $productModel,
@@ -328,6 +463,33 @@ class ProductModelController
             $data['values'] = [];
         }
 
+        if (!$productModel->isRoot()) {
+            $data = $this->productModelAttributeFilter->filter($data);
+        }
+
         $this->productModelUpdater->update($productModel, $data);
+    }
+
+    /**
+     * Find a product model by its id or throw a 404
+     *
+     * @param string $id the product id
+     *
+     * @throws NotFoundHttpException
+     *
+     * @return ProductModelInterface
+     */
+    protected function findProductModelOr404($id): ProductModelInterface
+    {
+        $productModel = $this->productModelRepository->find($id);
+        $productModel = $this->objectFilter->filterObject($productModel, 'pim.internal_api.product.view') ? null : $productModel;
+
+        if (null === $productModel) {
+            throw new NotFoundHttpException(
+                sprintf('ProductModel with id %s could not be found.', $id)
+            );
+        }
+
+        return $productModel;
     }
 }

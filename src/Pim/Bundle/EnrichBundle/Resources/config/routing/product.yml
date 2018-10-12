@@ -28,6 +28,11 @@ pim_enrich_product_rest_get:
         id: '[0-9a-f]+'
     methods: [GET]
 
+pim_enrich_product_rest_index:
+    path: /rest/
+    defaults: { _controller: pim_enrich.controller.rest.product:indexAction }
+    methods: [GET]
+
 pim_enrich_product_rest_create:
     path: /rest
     defaults: { _controller: pim_enrich.controller.rest.product:createAction }
@@ -57,13 +62,6 @@ pim_enrich_product_category_rest_list:
 pim_enrich_product_history_rest_get:
     path: /rest/product/{entityId}/history
     defaults: { _controller: pim_enrich.controller.rest.versioning:getAction, entityType: product }
-    requirements:
-        entityId: '[0-9a-f]+'
-    methods: [GET]
-
-pim_enrich_variant_product_history_rest_get:
-    path: /rest/variant-product/{entityId}/history
-    defaults: { _controller: pim_enrich.controller.rest.versioning:getAction, entityType: variant_product }
     requirements:
         entityId: '[0-9a-f]+'
     methods: [GET]

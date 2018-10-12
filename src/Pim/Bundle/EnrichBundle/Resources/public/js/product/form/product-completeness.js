@@ -11,19 +11,23 @@ define(
     [
         'underscore',
         'oro/translator',
+        'pim/router',
         'pim/form',
+        'pim/i18n',
         'pim/user-context',
         'pim/template/product/form/product-completeness'
     ],
     function (
         _,
         __,
+        router,
         BaseForm,
+        i18n,
         UserContext,
         template
     ) {
         return BaseForm.extend({
-            className: 'AknDropdown',
+            className: 'AknDropdown AknButtonList-item',
             template: _.template(template),
             events: {
                 'click .missing-attribute': 'showAttribute'
@@ -35,18 +39,27 @@ define(
             configure: function () {
                 this.listenTo(this.getRoot(), 'pim_enrich:form:scope_switcher:change', function (scopeEvent) {
                     if ('base_product' === scopeEvent.context) {
-                        this.render({ scope: scopeEvent.scopeCode });
+                        this.renderCompleteness({ scope: scopeEvent.scopeCode });
                     }
                 }.bind(this));
                 this.listenTo(this.getRoot(), 'pim_enrich:form:locale_switcher:change', function (localeEvent) {
                     if ('base_product' === localeEvent.context) {
-                        this.render({ locale: localeEvent.localeCode});
+                        this.renderCompleteness({ locale: localeEvent.localeCode});
                     }
                 }.bind(this));
 
-                this.listenTo(this.getRoot(), 'pim_enrich:form:entity:post_fetch', this.render.bind(this));
+                this.listenTo(this.getRoot(), 'pim_enrich:form:entity:post_fetch', this.renderCompleteness.bind(this));
 
                 return BaseForm.prototype.configure.apply(this, arguments);
+            },
+
+            /**
+             * {@inheritDoc}
+             */
+            render: function() {
+                this.renderCompleteness();
+
+                return BaseForm.prototype.render.apply(this, arguments);
             },
 
             /**
@@ -56,23 +69,25 @@ define(
              * @param options.locale String
              * @param options.scope  String
              */
-            render: function () {
-                const options = {
+            renderCompleteness: function (event) {
+                const options = Object.assign({}, {
                     locale: UserContext.get('catalogLocale'),
                     scope: UserContext.get('catalogScope')
-                };
+                }, event);
+
                 this.$el.empty();
 
                 const ratio = this.getCurrentRatio(options);
                 if (null !== ratio) {
                     this.$el.append(this.template({
                         __: __,
-                        label: __('pim_enrich.entity.product.completeness'),
+                        label: __('pim_enrich.entity.product.module.completeness.complete'),
                         ratio: ratio,
                         completenesses: this.getCurrentCompletenesses(options.scope),
                         badgeClass: this.getBadgeClass(options),
                         currentLocale: options.locale,
-                        missingValues: 'pim_enrich.form.product.panel.completeness.missing_values'
+                        missingValues: 'pim_enrich.entity.product.module.completeness.missing_values',
+                        i18n: i18n
                     }));
                 } else {
                     // We drop the element for design issues, to avoid blank spaces.
@@ -151,6 +166,27 @@ define(
                         context: 'base_product'
                     }
                 );
+
+                const product = this.getFormData();
+                const familyVariant = product.meta.family_variant;
+                const attributeCode = event.currentTarget.dataset.attribute;
+
+                if (null !== familyVariant) {
+                    if (!product.meta.attributes_for_this_level.includes(attributeCode)) {
+                        let modelId = product.meta.variant_navigation[0].selected.id;
+                        const comesFromParent = product.meta.parent_attributes.includes(attributeCode);
+                        const hasTwoLevelsOfVariation = (3 === product.meta.variant_navigation.length);
+
+                        if (comesFromParent && hasTwoLevelsOfVariation) {
+                            modelId = product.meta.variant_navigation[1].selected.id;
+                        }
+
+                        this.redirectToModel(modelId);
+
+                        return;
+                    }
+                }
+
                 this.getRoot().trigger(
                     'pim_enrich:form:show_attribute',
                     {
@@ -159,7 +195,21 @@ define(
                         scope: UserContext.get('catalogScope')
                     }
                 );
-                this.render();
+                this.renderCompleteness();
+            },
+
+            /**
+             * Redirect to the product model with the modelId
+             *
+             * @param modelId
+             */
+            redirectToModel: function(modelId) {
+                const params = {id: modelId};
+                const route = 'pim_enrich_product_model_edit';
+
+                sessionStorage.setItem('filter_missing_required_attributes', true);
+
+                router.redirectToRoute(route, params);
             }
         });
     }

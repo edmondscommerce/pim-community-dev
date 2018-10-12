@@ -1,6 +1,7 @@
 'use strict';
 
-define([
+define(
+    [
         'underscore',
         'pim/form',
         'oro/mediator',
@@ -50,7 +51,11 @@ define([
                     (familyVariant) => {
                         mediator.trigger(`datagrid:doRefresh:${this.config.gridName}`);
 
-                        formModalCreator.createModal(familyVariant.code, 'family-variant');
+                        formModalCreator.createModal(
+                            familyVariant.code,
+                            'family-variant',
+                            'modal modal--fullPage modal--alignTop'
+                        );
                     }
                 );
 

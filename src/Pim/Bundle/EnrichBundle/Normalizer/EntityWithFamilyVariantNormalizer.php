@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Pim\Bundle\EnrichBundle\Normalizer;
 
-use Pim\Component\Catalog\AttributeTypes;
-use Pim\Component\Catalog\Completeness\CompletenessCalculatorInterface;
-use Pim\Component\Catalog\FamilyVariant\EntityWithFamilyVariantAttributesProvider;
-use Pim\Component\Catalog\Model\EntityWithFamilyVariantInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Model\ValueInterface;
-use Pim\Component\Catalog\Model\VariantProductInterface;
-use Pim\Component\Catalog\ProductModel\ImageAsLabel;
-use Pim\Component\Catalog\ProductModel\Query\VariantProductRatioInterface;
-use Pim\Component\Catalog\Repository\LocaleRepositoryInterface;
+use Akeneo\Channel\Component\Repository\LocaleRepositoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Completeness\CompletenessCalculatorInterface;
+use Akeneo\Pim\Enrichment\Component\Product\EntityWithFamilyVariant\EntityWithFamilyVariantAttributesProvider;
+use Akeneo\Pim\Enrichment\Component\Product\Model\EntityWithFamilyVariantInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ValueInterface;
+use Akeneo\Pim\Enrichment\Component\Product\ProductModel\ImageAsLabel;
+use Akeneo\Pim\Enrichment\Component\Product\ProductModel\Query\VariantProductRatioInterface;
+use Akeneo\Pim\Structure\Component\AttributeTypes;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 /**
@@ -33,8 +33,8 @@ class EntityWithFamilyVariantNormalizer implements NormalizerInterface
     /** @var string[] */
     private $supportedFormat = ['internal_api'];
 
-    /** @var FileNormalizer */
-    private $fileNormalizer;
+    /** @var ImageNormalizer */
+    private $imageNormalizer;
 
     /** @var LocaleRepositoryInterface */
     private $localeRepository;
@@ -54,8 +54,9 @@ class EntityWithFamilyVariantNormalizer implements NormalizerInterface
     /** @var ImageAsLabel */
     private $imageAsLabel;
 
+
     /**
-     * @param FileNormalizer                            $fileNormalizer
+     * @param ImageNormalizer                           $imageNormalizer
      * @param LocaleRepositoryInterface                 $localeRepository
      * @param EntityWithFamilyVariantAttributesProvider $attributesProvider
      * @param NormalizerInterface                       $completenessCollectionNormalizer
@@ -64,7 +65,7 @@ class EntityWithFamilyVariantNormalizer implements NormalizerInterface
      * @param ImageAsLabel                              $imageAsLabel
      */
     public function __construct(
-        FileNormalizer $fileNormalizer,
+        ImageNormalizer $imageNormalizer,
         LocaleRepositoryInterface $localeRepository,
         EntityWithFamilyVariantAttributesProvider $attributesProvider,
         NormalizerInterface $completenessCollectionNormalizer,
@@ -72,7 +73,7 @@ class EntityWithFamilyVariantNormalizer implements NormalizerInterface
         VariantProductRatioInterface $variantProductRatioQuery,
         ImageAsLabel $imageAsLabel
     ) {
-        $this->fileNormalizer                   = $fileNormalizer;
+        $this->imageNormalizer                  = $imageNormalizer;
         $this->localeRepository                 = $localeRepository;
         $this->attributesProvider               = $attributesProvider;
         $this->completenessCollectionNormalizer = $completenessCollectionNormalizer;
@@ -86,11 +87,11 @@ class EntityWithFamilyVariantNormalizer implements NormalizerInterface
      */
     public function normalize($entity, $format = null, array $context = []): array
     {
-        if (!$entity instanceof ProductModelInterface && !$entity instanceof VariantProductInterface) {
+        if (!$entity instanceof ProductModelInterface && !$entity instanceof ProductInterface) {
             throw new \InvalidArgumentException(sprintf(
                 '"%s" or "%s" expected, "%s" received',
                 ProductModelInterface::class,
-                VariantProductInterface::class,
+                ProductInterface::class,
                 get_class($entity)
             ));
         }
@@ -115,8 +116,8 @@ class EntityWithFamilyVariantNormalizer implements NormalizerInterface
             'identifier'         => $identifier,
             'axes_values_labels' => $this->getAxesValuesLabelsForLocales($entity, $localeCodes),
             'labels'             => $labels,
-            'order_string'       => $this->getOrderString($entity),
-            'image'              => $this->normalizeImage($image, $format, $context),
+            'order'              => $this->getOrder($entity),
+            'image'              => $this->normalizeImage($image, $context),
             'model_type'         => $entity instanceof ProductModelInterface ? 'product_model' : 'product',
             'completeness'       => $this->getCompletenessDependingOnEntity($entity)
         ];
@@ -132,18 +133,13 @@ class EntityWithFamilyVariantNormalizer implements NormalizerInterface
 
     /**
      * @param ValueInterface $data
-     * @param string         $format
      * @param array          $context
      *
      * @return array|null
      */
-    private function normalizeImage(?ValueInterface $data, $format, $context = []): ?array
+    private function normalizeImage(?ValueInterface $data, array $context = []): ?array
     {
-        if (null === $data || null === $data->getData()) {
-            return null;
-        }
-
-        return $this->fileNormalizer->normalize($data->getData(), $format, $context);
+        return $this->imageNormalizer->normalize($data, $context['locale']);
     }
 
     /**
@@ -213,7 +209,7 @@ class EntityWithFamilyVariantNormalizer implements NormalizerInterface
             return $this->variantProductRatioQuery->findComplete($entity)->values();
         }
 
-        if ($entity instanceof VariantProductInterface) {
+        if ($entity instanceof ProductInterface && $entity->isVariant()) {
             $completenessCollection = $entity->getCompletenesses();
             if ($completenessCollection->isEmpty()) {
                 $newCompletenesses = $this->completenessCalculator->calculate($entity);
@@ -229,32 +225,33 @@ class EntityWithFamilyVariantNormalizer implements NormalizerInterface
     }
 
     /**
-     * Generate a string for the given $entity to represent its order among all its axes values.
+     * Generate an array for the given $entity to represent its order among all its axes values.
      *
      * For example, if its axes values are "Blue, 10 CENTIMETER" and Blue is an option with a sort order equals to 4,
-     * it will return "4, 10 CENTIMETER".
+     * it will return [4, blue, 10 CENTIMETER].
      *
-     * It allows to sort on this string to respect sort orders of attribute options.
+     * It allows to sort on front-end to respect sort orders of attribute options.
      *
      * @param EntityWithFamilyVariantInterface $entity
      *
-     * @return string
+     * @return array
      */
-    private function getOrderString(EntityWithFamilyVariantInterface $entity): string
+    private function getOrder(EntityWithFamilyVariantInterface $entity): array
     {
-        $orderStringArray = [];
+        $orderArray = [];
 
         foreach ($this->attributesProvider->getAxes($entity) as $axisAttribute) {
             $value = $entity->getValue($axisAttribute->getCode());
 
             if (AttributeTypes::OPTION_SIMPLE_SELECT === $axisAttribute->getType()) {
                 $option = $value->getData();
-                $orderStringArray[] = $option->getSortOrder();
+                $orderArray[] = $option->getSortOrder();
+                $orderArray[] = $option->getCode();
             } else {
-                $orderStringArray[] = (string) $value;
+                $orderArray[] = (string) $value;
             }
         }
 
-        return implode(', ', $orderStringArray);
+        return $orderArray;
     }
 }

@@ -3,11 +3,11 @@ declare(strict_types=1);
 
 namespace Pim\Bundle\EnrichBundle\Controller\Rest;
 
-use Akeneo\Component\StorageUtils\Cursor\CursorInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Query\ProductQueryBuilderFactoryInterface;
+use Akeneo\Tool\Component\StorageUtils\Cursor\CursorInterface;
 use Oro\Bundle\DataGridBundle\Extension\MassAction\MassActionParametersParser;
-use Pim\Bundle\DataGridBundle\Adapter\GridFilterAdapterInterface;
-use Pim\Bundle\DataGridBundle\Normalizer\IdEncoder;
-use Pim\Component\Catalog\Query\ProductQueryBuilderFactoryInterface;
+use Oro\Bundle\PimDataGridBundle\Adapter\GridFilterAdapterInterface;
+use Oro\Bundle\PimDataGridBundle\Normalizer\IdEncoder;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -49,6 +49,8 @@ class SequentialEditController
     /**
      * Get ids from datagrid request
      *
+     * @param Request $request
+     *
      * @return JsonResponse
      */
     public function getIdsAction(Request $request): JsonResponse
@@ -57,9 +59,10 @@ class SequentialEditController
         $filters = $this->filterAdapter->adapt($parameters);
 
         $products = [];
+
         $cursor = $this->getProductsCursor($filters, [
             'locale' => $parameters['dataLocale'],
-            'scope'  => $parameters['dataScope'],
+            'scope'  => $parameters['dataScope']['value'],
             'sort'   => $parameters['sort']
         ]);
 
@@ -72,15 +75,16 @@ class SequentialEditController
     }
 
     /**
-     * @param array            $filters
+     * @param array $filters
+     * @param array $context
      *
      * @return CursorInterface
      */
-    protected function getProductsCursor(array $filters, $context): CursorInterface
+    protected function getProductsCursor(array $filters, array $context): CursorInterface
     {
         $productQueryBuilder = $this->pqbFactory->create(['filters' => $filters]);
         if (null !== $context['sort']) {
-            $field = each($context['sort'])['key'];
+            $field = key($context['sort']);
             $productQueryBuilder->addSorter($field, $context['sort'][$field], $context);
         }
 

@@ -8,28 +8,31 @@
  */
 define(
     [
+        'jquery',
         'underscore',
         'oro/translator',
+        'oro/messenger',
         'pim/i18n',
         'pim/user-context',
         'pim/mass-edit-form/product/operation',
         'pim/fetcher-registry',
+        'pim/common/property',
         'pim/template/mass-edit/product/add-to-group'
     ],
     function (
+        $,
         _,
         __,
+        messenger,
         i18n,
         UserContext,
         BaseOperation,
         FetcherRegistry,
+        propertyAccessor,
         template
     ) {
         return BaseOperation.extend({
             template: _.template(template),
-            events: {
-                'change .group': 'updateModel'
-            },
 
             /**
              * {@inheritdoc}
@@ -42,16 +45,10 @@ define(
              * {@inheritdoc}
              */
             render: function () {
-                FetcherRegistry.getFetcher('group').fetchAll().then(function (groups) {
-                    this.$el.html(this.template({
-                        value: this.getValue(),
-                        groups: groups,
-                        i18n: i18n,
-                        readOnly: this.readOnly,
-                        locale: UserContext.get('uiLocale'),
-                        label: __('pim_enrich.mass_edit.product.operation.add_to_group.field')
-                    }));
-                }.bind(this));
+                this.$el.html(this.template());
+                this.renderExtensions();
+
+                this.$el.find('input[name=group]').attr('disabled', this.readOnly ? 'disabled' : null);
 
                 return this;
             },
@@ -99,9 +96,25 @@ define(
              * @return {array}
              */
             getValue: function () {
-                var action = _.findWhere(this.getFormData().actions, {field: 'groups'})
+                return _.findWhere(this.getFormData().actions, {field: 'group'});
+            },
 
-                return action ? action.value : null;
+            /**
+             * Checks there is at least one group selected to go to the next step
+             */
+            validate: function () {
+                const data = this.getFormData();
+                const groupsStr = propertyAccessor.accessProperty(data, 'group', '');
+                const groups = groupsStr.split(',');
+                this.setValue(groups);
+
+                const hasUpdates = 0 !== groups.length;
+
+                if (!hasUpdates) {
+                    messenger.notify('error', __('pim_enrich.mass_edit.product.operation.add_to_group.no_update'));
+                }
+
+                return $.Deferred().resolve(hasUpdates);
             }
         });
     }

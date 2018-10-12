@@ -32,19 +32,22 @@ define([
         attributeGroupTemplate
     ) {
         const sortOrdered = (first, second) => first.sort_order - second.sort_order;
+        const sortAlphabetical = (first, second) => first.code.localeCompare(second.code);
 
         /**
          * Group attributes by attribute group
          */
         const groupAttributes = (attributes, attributeGroups) => (attributeCodes, lockedAttributes) => {
             return Object.values(attributeGroups)
+                .sort(sortAlphabetical)
                 .sort(sortOrdered)
                 .map(attributeGroup => {
                     const groupAttributes = attributes.filter(
                         attribute =>
                             attribute.group === attributeGroup.code &&
                             attributeCodes.indexOf(attribute.code) !== -1
-                    ).sort(sortOrdered);
+                    ).sort(sortAlphabetical)
+                    .sort(sortOrdered);
 
                     const locked = groupAttributes.filter(
                         attribute => !lockedAttributes.includes(attribute.code)
@@ -65,7 +68,6 @@ define([
             attributes.find(attribute => attribute.code === attributeCode);
 
         return BaseForm.extend({
-            className: 'family-variant-levels AknFamilyVariant',
             events: {
                 'click .delete-attribute': 'removeAttributeFromVariantAttributeSet',
                 'click .delete-attribute-group': 'removeAttributeGroupFromVariantAttributeSet'
@@ -96,7 +98,7 @@ define([
 
                         return $.when(
                             fetcherRegistry.getFetcher('attribute-group').fetchAll(),
-                            fetcherRegistry.getFetcher('attribute').fetchByIdentifiers(attributeCodes),
+                            fetcherRegistry.getFetcher('attribute').fetchByIdentifiers(attributeCodes, {rights: 0}),
                             axesAttributeCodes,
                             family
                         );
@@ -177,8 +179,9 @@ define([
                         }).disableSelection();
 
                         this.renderExtensions();
-                    });
 
+                        this.delegateEvents();
+                    });
 
                 return this;
             },
@@ -297,8 +300,8 @@ define([
              */
             handleAttributesRemoval(level, removedAttributes) {
                 Dialog.confirm(
-                    __('pim_enrich.entity.family.variant.confirm_attribute_removal.message'),
-                    __('pim_enrich.entity.family.variant.confirm_attribute_removal.title'),
+                    __('pim_enrich.entity.family_variant.module.edit.confirm_attribute_removal_message'),
+                    __('pim_enrich.entity.family_variant.module.edit.confirm_attribute_removal_title'),
                     () => {
                         var data = this.getFormData();
                         data.variant_attribute_sets.forEach((attributeSet) => {

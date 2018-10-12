@@ -14,7 +14,8 @@ define(
         'pim/i18n',
         'pim/initselect2',
         'pim/user-context',
-        'pim/template/form/common/fields/simple-select-async'
+        'pim/template/form/common/fields/simple-select-async',
+        'routing'
     ],
     function (
         $,
@@ -24,7 +25,8 @@ define(
         i18n,
         initSelect2,
         UserContext,
-        template
+        template,
+        Routing
     ) {
         return BaseField.extend({
             events: {
@@ -36,14 +38,23 @@ define(
             },
             template: _.template(template),
             choiceUrl: null,
+            resultsPerPage: 20,
 
             /**
              * {@inheritdoc}
              */
             initialize() {
                 this.choiceUrl = null;
+                this.choiceVerb = 'GET';
 
-                return BaseField.prototype.initialize.apply(this, arguments);
+                BaseField.prototype.initialize.apply(this, arguments);
+
+                if (undefined !== this.config.choiceRoute) {
+                    this.setChoiceUrl(Routing.generate(this.config.choiceRoute));
+                }
+                if (undefined !== this.config.choiceVerb) {
+                    this.choiceVerb = this.config.choiceVerb;
+                }
             },
 
             /**
@@ -68,18 +79,26 @@ define(
              * {@inheritdoc}
              */
             postRender() {
-                const options = {
+                initSelect2.init(this.$('.select2'), this.getSelect2Options());
+            },
+
+            /**
+             * Returns the options for Select2 library
+             *
+             * @returns {Object}
+             */
+            getSelect2Options() {
+                return {
                     ajax: {
                         url: this.choiceUrl,
                         cache: true,
                         data: this.select2Data.bind(this),
-                        results: this.select2Results.bind(this)
+                        results: this.select2Results.bind(this),
+                        type: this.choiceVerb
                     },
                     initSelection: this.select2InitSelection.bind(this),
-                    placeholder: ' '
+                    placeholder: undefined !== this.config.placeholder ? __(this.config.placeholder) : ' '
                 };
-
-                initSelect2.init(this.$('.select2'), options);
             },
 
             /**
@@ -94,7 +113,7 @@ define(
                 return {
                     search: term,
                     options: {
-                        limit: 20,
+                        limit: this.resultsPerPage,
                         page: page,
                         catalogLocale: UserContext.get('catalogLocale')
                     }
@@ -109,15 +128,30 @@ define(
              * @returns {Object}
              */
             select2Results(response) {
+                const nbResults = (response.results) ?
+                    Object.keys(response.results).length :
+                    Object.keys(response).length;
+                const more = this.resultsPerPage === nbResults;
+
+                // The result is already formatted for select2
                 if (response.results) {
-                    response.more = 20 === Object.keys(response.results).length;
+                    response.more = more;
 
                     return response;
                 }
 
+                // The result is an array
+                if (response.isArray) {
+                    return {
+                        more: more,
+                        results: response.map(item => this.convertBackendItem(item))
+                    };
+                }
+
+                // The result is an object
                 return {
-                    more: 20 === Object.keys(response).length,
-                    results: response.map((item) => this.convertBackendItem(item))
+                    more: more,
+                    results: Object.values(response).map(item => this.convertBackendItem(item))
                 };
             },
 
@@ -130,17 +164,20 @@ define(
             select2InitSelection(element, callback) {
                 const id = $(element).val();
                 if ('' !== id) {
-                    $.get(this.choiceUrl, {options: {identifiers: [id]}})
-                        .then((response) => {
-                            let selected = _.findWhere(response, {code: id});
+                    $.ajax({
+                        url: this.choiceUrl,
+                        data: {options: {identifiers: [id]}},
+                        type: this.choiceVerb
+                    }).then((response) => {
+                        let selected = _.findWhere(response, {code: id});
 
-                            if (!selected) {
-                                selected = _.findWhere(response.results, {id: id});
-                            } else {
-                                selected = this.convertBackendItem(selected);
-                            }
-                            callback(selected);
-                        });
+                        if (!selected) {
+                            selected = _.findWhere(response.results, {id: id});
+                        } else {
+                            selected = this.convertBackendItem(selected);
+                        }
+                        callback(selected);
+                    });
                 }
             },
 
@@ -152,6 +189,13 @@ define(
              * @returns {Object}
              */
             convertBackendItem(item) {
+                if (undefined !== item.label) {
+                    return {
+                        id: item.code,
+                        text: item.label
+                    }
+                }
+
                 return {
                     id: item.code,
                     text: i18n.getLabel(item.labels, UserContext.get('catalogLocale'), item.code)

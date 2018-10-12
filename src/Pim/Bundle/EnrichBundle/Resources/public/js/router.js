@@ -31,9 +31,10 @@ define(
         var Router = Backbone.Router.extend({
             DEFAULT_ROUTE: 'oro_default',
             routes: {
-                '': 'dashboard',
+                '': 'index',
                 '*path': 'defaultRoute'
             },
+            indexRoute: null,
             loadingMask: null,
             currentController: null,
 
@@ -45,16 +46,18 @@ define(
                 this.loadingMask.render().$el.appendTo($('.hash-loading-mask'));
                 _.bindAll(this, 'showLoadingMask', 'hideLoadingMask');
 
+                this.indexRoute = __moduleConfig.indexRoute;
+
                 this.listenTo(mediator, 'route_complete', this._processLinks);
             },
 
             /**
-             * Go to the homepage of the app
+             * Go to the index of the app
              *
              * @return {String}
              */
-            dashboard: function () {
-                return this.defaultRoute(this.generate('pim_dashboard_index'));
+            index: function () {
+                return this.defaultRoute(this.generate(this.indexRoute));
             },
 
             /**
@@ -76,7 +79,7 @@ define(
                     return this.notFound();
                 }
                 if (this.DEFAULT_ROUTE === route.name) {
-                    return this.dashboard();
+                    return this.index();
                 }
 
                 this.showLoadingMask();
@@ -93,7 +96,7 @@ define(
                     if (controller.aclResourceId && !securityContext.isGranted(controller.aclResourceId)) {
                         this.hideLoadingMask();
 
-                        return this.displayErrorPage(__('pim_enrich.error.http.403'), '403');
+                        return this.displayErrorPage(__('error.exception.forbidden'), '403');
                     }
 
                     controller.el = $view;
@@ -123,7 +126,7 @@ define(
 
                 switch (xhr.status) {
                     case 401:
-                        window.location = this.generate('oro_user_security_login');
+                        window.location = this.generate('pim_user_security_login');
                         break;
                     default:
                         this.errorPage(xhr);
@@ -220,7 +223,7 @@ define(
              * Redirect to the given route
              */
             redirectToRoute: function (route, routeParams, options) {
-                this.redirect(Routing.generate(route, routeParams), options);
+                return this.redirect(Routing.generate(route, routeParams), options);
             },
 
             /**

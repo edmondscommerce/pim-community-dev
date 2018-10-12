@@ -2,11 +2,19 @@
 
 namespace Pim\Bundle\EnrichBundle\ProductQueryBuilder;
 
-use Pim\Component\Catalog\Query\Filter\Operators;
-use Pim\Component\Catalog\Query\ProductQueryBuilderInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Query\Filter\Operators;
+use Akeneo\Pim\Enrichment\Component\Product\Query\ProductQueryBuilderInterface;
 
 /**
- * Provides a way to search simply and efficiently product and product models.
+ * Provides a way to search product and product models.
+ * The results are gathered by the most top level product model matching the search criteria.
+ *
+ * The most simple use case is that we look for documents without any parent
+ * (cf method shouldSearchDocumentsWithoutParent).
+ *
+ * Otherwise, we have to smartly look for products and product models depending on the values
+ * they contain (we use the 'attributes_of_ancestors' and 'categories_of_ancestors' properties to achieve it).
  *
  * @author    Julien Janvier <j.janvier@gmail.com>
  * @copyright 2017 Akeneo SAS (http://www.akeneo.com)
@@ -17,12 +25,19 @@ class ProductAndProductModelQueryBuilder implements ProductQueryBuilderInterface
     /** @var ProductQueryBuilderInterface */
     private $pqb;
 
+    /** @var ProductAndProductModelSearchAggregator */
+    private $searchAggregator;
+
     /**
-     * @param ProductQueryBuilderInterface $pqb
+     * @param ProductQueryBuilderInterface           $pqb
+     * @param ProductAndProductModelSearchAggregator $searchAggregator
      */
-    public function __construct(ProductQueryBuilderInterface $pqb)
-    {
+    public function __construct(
+        ProductQueryBuilderInterface $pqb,
+        ProductAndProductModelSearchAggregator $searchAggregator
+    ) {
         $this->pqb = $pqb;
+        $this->searchAggregator = $searchAggregator;
     }
 
     /**
@@ -70,69 +85,98 @@ class ProductAndProductModelQueryBuilder implements ProductQueryBuilderInterface
      */
     public function execute()
     {
-        if ($this->isSearchGroupedByProductModels()) {
+        if ($this->shouldFilterOnlyOnProducts()) {
+            $this->addFilter('entity_type', Operators::EQUALS, ProductInterface::class);
+
+            return $this->pqb->execute();
+        }
+
+        if ($this->shouldSearchDocumentsWithoutParent()) {
             $this->addFilter('parent', Operators::IS_EMPTY, null);
         }
 
-        $attributeFilters = $this->getAttributeFilters();
-        if (!empty($attributeFilters)) {
-            $attributeFilterKeys = array_column($attributeFilters, 'field');
-            $this->addFilter('attributes_for_this_level', Operators::IN_LIST, $attributeFilterKeys);
+        if (!$this->hasRawFilter('field', 'parent')) {
+            $this->searchAggregator->aggregateResults($this->getQueryBuilder(), $this->getRawFilters());
         }
 
         return $this->pqb->execute();
     }
 
     /**
-     * If there are no filter on the following fields, the request should not try to group the result by product models.
-     * - field Id or identifier
-     * - on any attributes
-     * - on the parent field
+     * Should we only filter on lower level products
      *
      * @return bool
      */
-    private function isSearchGroupedByProductModels(): bool
+    private function shouldFilterOnlyOnProducts(): bool
     {
-        $attributeFilters = $this->getAttributeFilters();
+        $hasStatusFilter = $this->hasRawFilter('field', 'enabled');
 
-        $parentFilter = array_filter(
-            $this->getRawFilters(),
-            function ($filter) {
-                return 'parent' === $filter['field'];
-            }
-        );
-
-        $idFilter = array_filter(
-            $this->getRawFilters(),
-            function ($filter) {
-                return 'id' === $filter['field'];
-            }
-        );
-
-        $identifierFilter = array_filter(
-            $this->getRawFilters(),
-            function ($filter) {
-                return 'identifier' === $filter['field'];
-            }
-        );
-
-        return empty($attributeFilters) && empty($parentFilter) && empty($idFilter) && empty($identifierFilter);
+        return $hasStatusFilter;
     }
 
     /**
-     * Returns the filters on the attributes
+     * If there no "particular" filter, that means we want to look for documents that do not have any parent.
+     * This happens for instance with the default grid view.
      *
-     * @return array
+     * @return bool
      */
-    private function getAttributeFilters(): array
+    private function shouldSearchDocumentsWithoutParent(): bool
     {
-        $attributeFilters = array_filter(
-            $this->getRawFilters(),
-            function ($filter) {
-                return 'attribute' === $filter['type'];
-            }
-        );
+        $hasAttributeFilters = $this->hasRawFilter('type', 'attribute');
+        $hasParentFilter = $this->hasRawFilter('field', 'parent');
+        $hasIdFilter = $this->hasRawFilter('field', 'id');
+        $hasIdentifierFilter = $this->hasRawFilter('field', 'identifier');
+        $hasEntityTypeFilter = $this->hasRawFilter('field', 'entity_type');
+        $hasAncestorsIdsFilter = $this->hasRawFilter('field', 'ancestor.id');
+        $hasSelfAndAncestorsIdsFilter = $this->hasRawFilter('field', 'self_and_ancestor.id');
+        $hasGroupsFilter = $this->hasRawFilter('field', 'groups');
+        $hasCategoryFilter = $this->hasFilterOnCategoryWhichImplyAggregation();
 
-        return $attributeFilters;
+        return !$hasAttributeFilters &&
+            !$hasParentFilter &&
+            !$hasIdFilter &&
+            !$hasIdentifierFilter &&
+            !$hasEntityTypeFilter &&
+            !$hasAncestorsIdsFilter &&
+            !$hasSelfAndAncestorsIdsFilter &&
+            !$hasGroupsFilter &&
+            !$hasCategoryFilter;
+    }
+
+    /**
+     * Checks whether the raw filters contains a filter on a particular field.
+     *
+     * @param string $filterProperty
+     * @param string $value
+     *
+     * @return bool
+     */
+    private function hasRawFilter(string $filterProperty, string $value): bool
+    {
+        return !empty(array_filter(
+            $this->getRawFilters(),
+            function ($filter) use ($filterProperty, $value) {
+                return $value === $filter[$filterProperty];
+            }
+        ));
+    }
+
+    /**
+     * The PQB should aggregate the results only if the operator used is IS_EMPTY or IS_NOT_EMPTY.
+     *
+     * Only those operators indicate a user selection.
+     */
+    private function hasFilterOnCategoryWhichImplyAggregation(): bool
+    {
+        $hasFilter = !empty(array_filter(
+            $this->getRawFilters(),
+            function (array $filter) {
+                return 'field' === $filter['type'] &&
+                    'categories' === $filter['field'] &&
+                    (Operators::IN_LIST === $filter['operator'] || Operators::IN_CHILDREN_LIST === $filter['operator']);
+            }
+        ));
+
+        return $hasFilter;
     }
 }

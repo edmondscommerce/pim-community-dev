@@ -2,8 +2,8 @@
 
 namespace Pim\Bundle\EnrichBundle\Connector\Job\JobParameters\DefaultValuesProvider;
 
-use Akeneo\Component\Batch\Job\JobInterface;
-use Akeneo\Component\Batch\Job\JobParameters\DefaultValuesProviderInterface;
+use Akeneo\Tool\Component\Batch\Job\JobInterface;
+use Akeneo\Tool\Component\Batch\Job\JobParameters\DefaultValuesProviderInterface;
 
 /**
  * DefaultParameters for product mass edit
@@ -31,11 +31,11 @@ class ProductMassEdit implements DefaultValuesProviderInterface
     public function getDefaultValues()
     {
         return [
-            'filters'            => [],
-            'actions'            => [],
-            'realTimeVersioning' => true,
-            'user_to_notify'     => null,
-            'is_user_authenticated' => false,
+            'filters'               => [],
+            'actions'               => [],
+            'realTimeVersioning'    => true,
+            'user_to_notify'        => null,
+            'is_user_authenticated' => false
         ];
     }
 

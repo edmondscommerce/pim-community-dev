@@ -2,10 +2,10 @@
 
 namespace Pim\Bundle\EnrichBundle\Normalizer;
 
-use Pim\Component\Catalog\Model\AttributeInterface;
-use Pim\Component\Catalog\Model\ChannelInterface;
-use Pim\Component\Catalog\Model\CompletenessInterface;
-use Pim\Component\Catalog\Model\LocaleInterface;
+use Akeneo\Channel\Component\Model\ChannelInterface;
+use Akeneo\Channel\Component\Model\LocaleInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\CompletenessInterface;
+use Akeneo\Pim\Structure\Component\Model\AttributeInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 /**
@@ -96,6 +96,7 @@ class CompletenessCollectionNormalizer implements NormalizerInterface
         }
 
         foreach ($sortedCompletenesses as $channelCode => $channelCompletenesses) {
+            $channelCode = (string) $channelCode;
             $normalizedCompletenesses[] = [
                 'channel'   => $channelCode,
                 'labels'    => $this->getChannelLabels($channels, $locales, $channelCode),
@@ -223,7 +224,7 @@ class CompletenessCollectionNormalizer implements NormalizerInterface
      *
      * @return string[]
      */
-    protected function getChannelLabels(array $channels, array $locales, $channelCode)
+    protected function getChannelLabels(array $channels, array $locales, string $channelCode)
     {
         $matchingChannels = array_filter($channels, function (ChannelInterface $channel) use ($channelCode) {
             return $channel->getCode() === $channelCode;

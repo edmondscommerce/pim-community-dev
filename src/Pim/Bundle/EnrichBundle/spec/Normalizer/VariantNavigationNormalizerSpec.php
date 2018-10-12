@@ -5,12 +5,12 @@ namespace spec\Pim\Bundle\EnrichBundle\Normalizer;
 use Doctrine\Common\Collections\Collection;
 use PhpSpec\ObjectBehavior;
 use Pim\Bundle\EnrichBundle\Normalizer\EntityWithFamilyVariantNormalizer;
-use Pim\Component\Catalog\Model\AttributeInterface;
-use Pim\Component\Catalog\Model\FamilyVariantInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Model\VariantAttributeSetInterface;
-use Pim\Component\Catalog\Model\VariantProductInterface;
-use Pim\Component\Catalog\Repository\LocaleRepositoryInterface;
+use Akeneo\Pim\Structure\Component\Model\AttributeInterface;
+use Akeneo\Pim\Structure\Component\Model\FamilyVariantInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Structure\Component\Model\VariantAttributeSetInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductInterface;
+use Akeneo\Channel\Component\Repository\LocaleRepositoryInterface;
 
 class VariantNavigationNormalizerSpec extends ObjectBehavior
 {
@@ -159,7 +159,7 @@ class VariantNavigationNormalizerSpec extends ObjectBehavior
         AttributeInterface $sizeAttribute,
         ProductModelInterface $rootProductModel,
         ProductModelInterface $productModel,
-        VariantProductInterface $variantProduct
+        ProductInterface $variantProduct
     ) {
         // Attribute sets of the family variant
         $attributeSets->getIterator()->willReturn($attributeSetsIterator);

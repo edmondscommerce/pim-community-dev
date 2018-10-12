@@ -2,7 +2,7 @@
 
 namespace Pim\Bundle\EnrichBundle\Twig;
 
-use Akeneo\Component\Classification\Model\CategoryInterface;
+use Akeneo\Tool\Component\Classification\Model\CategoryInterface;
 use Doctrine\Common\Collections\Collection;
 use Pim\Bundle\EnrichBundle\Doctrine\Counter\CategoryItemsCounterInterface;
 use Pim\Bundle\EnrichBundle\Doctrine\Counter\CategoryItemsCounterRegistryInterface;
@@ -424,7 +424,7 @@ class CategoryExtension extends \Twig_Extension
 
         // set label in bold
         if ($selectedChildren > 0) {
-            $result['data'] = sprintf('<strong>%s</strong>', $result['data']);
+            $result['data'] = sprintf('%s', $result['data']);
         }
 
         return $result;

@@ -8,14 +8,14 @@
  * @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 define([
-        'jquery',
-        'underscore',
-        'oro/translator',
-        'pim/form',
-        'pim/fetcher-registry',
-        'pim/template/channel/tab/properties/general/locales',
-        'jquery.select2'
-    ],
+    'jquery',
+    'underscore',
+    'oro/translator',
+    'pim/form',
+    'pim/fetcher-registry',
+    'pim/template/channel/tab/properties/general/locales',
+    'jquery.select2'
+],
     function (
         $,
         _,
@@ -57,8 +57,8 @@ define([
                     this.$el.html(this.template({
                         currentLocales: this.getFormData().locales,
                         locales: locales,
-                        label: __('pim_enrich.form.channel.tab.properties.locales'),
-                        requiredLabel: __('pim_enrich.form.required'),
+                        label: __('pim_enrich.entity.locale.plural_label'),
+                        requiredLabel: __('pim_common.required_label'),
                         errors: this.getParent().getValidationErrorsForField('locales')
                     }));
 

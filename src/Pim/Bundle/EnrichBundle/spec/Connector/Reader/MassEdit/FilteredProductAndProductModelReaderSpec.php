@@ -2,20 +2,20 @@
 
 namespace spec\Pim\Bundle\EnrichBundle\Connector\Reader\MassEdit;
 
-use Akeneo\Component\Batch\Job\JobParameters;
-use Akeneo\Component\Batch\Model\StepExecution;
-use Akeneo\Component\StorageUtils\Cursor\CursorInterface;
-use Akeneo\Component\StorageUtils\Detacher\ObjectDetacherInterface;
+use Akeneo\Tool\Component\Batch\Job\JobParameters;
+use Akeneo\Tool\Component\Batch\Model\StepExecution;
+use Akeneo\Tool\Component\StorageUtils\Cursor\CursorInterface;
+use Akeneo\Tool\Component\StorageUtils\Detacher\ObjectDetacherInterface;
 use PhpSpec\ObjectBehavior;
 use Pim\Bundle\EnrichBundle\Connector\Reader\MassEdit\FilteredProductAndProductModelReader;
-use Pim\Component\Catalog\Manager\CompletenessManager;
-use Pim\Component\Catalog\Model\ChannelInterface;
-use Pim\Component\Catalog\Model\ProductInterface;
-use Pim\Component\Catalog\Model\ProductModelInterface;
-use Pim\Component\Catalog\Query\ProductQueryBuilderFactoryInterface;
-use Pim\Component\Catalog\Query\ProductQueryBuilderInterface;
-use Pim\Component\Catalog\Repository\ChannelRepositoryInterface;
-use Pim\Component\Catalog\Converter\MetricConverter;
+use Akeneo\Pim\Enrichment\Component\Product\Manager\CompletenessManager;
+use Akeneo\Channel\Component\Model\ChannelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Model\ProductModelInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Query\ProductQueryBuilderFactoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Query\ProductQueryBuilderInterface;
+use Akeneo\Channel\Component\Repository\ChannelRepositoryInterface;
+use Akeneo\Pim\Enrichment\Component\Product\Converter\MetricConverter;
 use Prophecy\Argument;
 use Prophecy\Promise\ReturnPromise;
 
@@ -31,7 +31,6 @@ class FilteredProductAndProductModelReaderSpec extends ObjectBehavior
         ChannelRepositoryInterface $channelRepository,
         CompletenessManager $completenessManager,
         MetricConverter $metricConverter,
-        ObjectDetacherInterface $objectDetacher,
         StepExecution $stepExecution
     ) {
         $this->beConstructedWith(
@@ -39,8 +38,8 @@ class FilteredProductAndProductModelReaderSpec extends ObjectBehavior
             $channelRepository,
             $completenessManager,
             $metricConverter,
-            $objectDetacher,
-            true
+            true,
+            false
         );
 
         $this->setStepExecution($stepExecution);
@@ -111,7 +110,7 @@ class FilteredProductAndProductModelReaderSpec extends ObjectBehavior
             }
         );
         $cursor->current()->will(new ReturnPromise($products));
-        $cursor->next()->shouldBeCalled();
+        $cursor->next()->shouldBeCalledTimes(5);
 
         $stepExecution->incrementSummaryInfo('read')->shouldBeCalledTimes(3);
         $metricConverter->convert(Argument::any(), $channel)->shouldBeCalledTimes(3);
@@ -119,8 +118,7 @@ class FilteredProductAndProductModelReaderSpec extends ObjectBehavior
         $productModel1->getCode()->willReturn('product_model_1');
         $productModel2->getCode()->willReturn('product_model_2');
         $productModel3->getCode()->willReturn('product_model_3');
-        $stepExecution->incrementSummaryInfo('skip')->shouldBeCalledTimes(3);
-        $stepExecution->addWarning('Bulk actions do not support Product models entities yet.', Argument::cetera())
+        $stepExecution->addWarning('This bulk action doesn\'t support Product models entities yet.', Argument::cetera())
             ->shouldBeCalledTimes(3);
 
         $this->initialize();

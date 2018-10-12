@@ -29,15 +29,15 @@ define(
         ChoicesFormatter
     ) {
         return BaseAddSelect.extend({
-            className: 'add-attribute',
+            className: 'AknButtonList-item add-attribute',
             lineView: LineView,
             defaultConfig: {
                 select2: {
-                    placeholder: 'pim_enrich.form.common.tab.attributes.btn.add_attributes',
-                    title: 'pim_enrich.form.common.tab.attributes.info.search_attributes',
-                    buttonTitle: 'pim_enrich.form.common.tab.attributes.btn.add',
-                    countTitle: 'pim_enrich.form.product.tab.attributes.info.attributes_selected',
-                    emptyText: 'pim_enrich.form.common.tab.attributes.info.no_available_attributes',
+                    placeholder: 'pim_common.add_attributes',
+                    title: 'pim_common.select2.search',
+                    buttonTitle: 'pim_common.add',
+                    countTitle: 'pim_enrich.entity.attribute.module.add_attribute.attributes_selected',
+                    emptyText: 'pim_enrich.entity.attribute.module.add_attribute.no_available_attributes',
                     classes: 'pim-add-attributes-multiselect',
                     minimumInputLength: 0,
                     dropdownCssClass: 'add-attribute',
@@ -66,8 +66,12 @@ define(
              *
              * {@inheritdoc}
              */
-            fetchItems: function () {
-                return BaseAddSelect.prototype.fetchItems.apply(this, arguments)
+            fetchItems: function (searchParameters) {
+                if (undefined !== this.config.attributeTypes && Array.isArray(this.config.attributeTypes)) {
+                    searchParameters.types = this.config.attributeTypes.join(',');
+                }
+
+                return BaseAddSelect.prototype.fetchItems.apply(this, [searchParameters])
                     .then(function (attributes) {
                         var groupCodes = _.unique(_.pluck(attributes, 'group'));
 

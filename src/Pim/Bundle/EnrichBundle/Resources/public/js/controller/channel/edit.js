@@ -19,7 +19,7 @@ define(
              */
             renderForm: function (route) {
                 if (undefined === route.params.code) {
-                    var label = 'pim_enrich.entity.channel.title.create';
+                    var label = 'pim_enrich.entity.channel.label.create';
 
                     return createForm.call(
                         this,
@@ -38,7 +38,7 @@ define(
                     );
                 } else {
                     return FetcherRegistry.getFetcher('channel')
-                        .fetch(route.params.code, { cached: false })
+                        .fetch(route.params.code, {cached: false, 'filter_locales': 0})
                         .then((channel) => {
                             const label = _.escape(
                                 i18n.getLabel(
@@ -53,7 +53,7 @@ define(
                 }
 
                 function createForm(domElement, channel, label, formExtension) {
-                    PageTitle.set({'channel.label': _.escape(label) });
+                    PageTitle.set({'channel.label': _.escape(label)});
 
                     return FormBuilder.build(formExtension)
                         .then((form) => {

@@ -24,7 +24,9 @@ define(
         'oro/datagrid-builder',
         'oro/pageable-collection',
         'pim/datagrid/state',
-        'require-context'
+        'require-context',
+        'pim/form-builder',
+        'pim/security-context'
     ],
     function (
         $,
@@ -42,9 +44,11 @@ define(
         datagridBuilder,
         PageableCollection,
         DatagridState,
-        requireContext
+        requireContext,
+        FormBuilder,
+        securityContext
     ) {
-        var state = {};
+        let state = {};
 
         return BaseForm.extend({
             template: _.template(formTemplate),
@@ -52,18 +56,27 @@ define(
             className: 'tab-pane active product-associations',
             events: {
                 'click .associations-list li': 'changeAssociationType',
-                'click .target-button': 'changeAssociationTargets'
+                'click .target-button': 'changeAssociationTargets',
+                'click .add-associations': 'addAssociations'
             },
-            initialize: function () {
+            datagrids: {},
+            config: {},
+
+            /**
+             * {@inheritdoc}
+             */
+            initialize: function (meta) {
+                this.config = meta.config;
+
                 state = {
                     associationTarget: 'products'
                 };
 
                 this.datagrids = {
                     products: {
-                        name: 'association-product-grid',
+                        name: this.config.datagridName,
                         getInitialParams: function (associationType) {
-                            var params = {
+                            let params = {
                                 product: this.getFormData().meta.id
                             };
                             params[this.datagrids.products.paramName] =
@@ -83,7 +96,7 @@ define(
                     groups: {
                         name: 'association-group-grid',
                         getInitialParams: function (associationType) {
-                            var params = {};
+                            let params = {};
                             params[this.paramName] = this.getParamValue(associationType);
                             params.dataLocale = UserContext.get('catalogLocale');
 
@@ -91,9 +104,9 @@ define(
                         },
                         paramName: 'associatedIds',
                         getParamValue: function (associationType) {
-                            var associations = this.getFormData().meta.associations;
+                            const associationsMeta = this.getFormData().meta.associations;
 
-                            return associations[associationType] ? associations[associationType].groupIds : [];
+                            return associationsMeta[associationType] ? associationsMeta[associationType].groupIds : [];
                         }.bind(this),
                         getModelIdentifier: function (model) {
                             return model.get('code');
@@ -103,11 +116,15 @@ define(
 
                 BaseForm.prototype.initialize.apply(this, arguments);
             },
+
+            /**
+             * {@inheritdoc}
+             */
             configure: function () {
                 this.trigger('tab:register', {
-                    code: this.code,
+                    code: (undefined === this.config.tabCode) ? this.code : this.config.tabCode,
                     isVisible: this.isVisible.bind(this),
-                    label: __('pim_enrich.form.product.tab.associations.title')
+                    label: __('pim_enrich.entity.product.module.associations.title')
                 });
 
                 _.each(this.datagrids, function (datagrid) {
@@ -132,15 +149,23 @@ define(
 
                 return BaseForm.prototype.configure.apply(this, arguments);
             },
+
+            /**
+             * {@inheritdoc}
+             */
             render: function () {
-                if (!this.configured || this.code !== this.getParent().getCurrentTab()) {
+                const code = (undefined === this.config.tabCode) ? this.code : this.config.tabCode;
+
+                if (!this.configured || code !== this.getParent().getCurrentTab()) {
                     return;
                 }
 
                 this.loadAssociationTypes().then(function (associationTypes) {
-                    var currentAssociationType = associationTypes.length ? _.first(associationTypes).code : null;
+                    const currentAssociationType = associationTypes.length ? _.first(associationTypes).code : null;
 
-                    if (null === this.getCurrentAssociationType()) {
+                    if (null === this.getCurrentAssociationType() ||
+                        _.isUndefined(_.findWhere(associationTypes, {code: this.getCurrentAssociationType()}))
+                    ) {
                         this.setCurrentAssociationType(currentAssociationType);
                     }
 
@@ -157,13 +182,16 @@ define(
                             currentAssociationType: _.findWhere(
                                 associationTypes,
                                 {code: this.getCurrentAssociationType()}
-                            )
+                            ),
+                            addAssociationsLabel: __('pim_enrich.entity.product.module.associations.add_associations'),
+                            addAssociationVisible: this.isAddAssociationsVisible(),
+                            datagridName: this.config.datagridName
                         })
                     );
                     this.renderPanes();
 
                     if (associationTypes.length) {
-                        var currentGrid = this.datagrids[this.getCurrentAssociationTarget()];
+                        const currentGrid = this.datagrids[this.getCurrentAssociationTarget()];
                         this.renderGrid(
                             currentGrid.name,
                             currentGrid.getInitialParams(this.getCurrentAssociationType())
@@ -176,6 +204,10 @@ define(
 
                 return this;
             },
+
+            /**
+             * Prepend for each association type each tab content
+             */
             renderPanes: function () {
                 this.loadAssociationTypes().then(function (associationTypes) {
                     this.setAssociationCount(associationTypes);
@@ -183,20 +215,24 @@ define(
                     this.$('.tab-content').prepend(
                         this.panesTemplate({
                             __: __,
-                            label: __('pim_enrich.form.product.tab.associations.association_type_selector'),
+                            label: __('pim_enrich.entity.product.module.associations.association_type_selector'),
                             locale: UserContext.get('catalogLocale'),
                             associationTypes: associationTypes,
                             currentAssociationType: this.getCurrentAssociationType(),
                             currentAssociationTarget: this.getCurrentAssociationTarget(),
                             numberAssociationLabelKey:
-                                'pim_enrich.form.product.tab.associations.info.number_of_associations',
-                            targetLabel: __('pim_enrich.form.product.tab.associations.target'),
-                            showProductsLabel: __('pim_enrich.form.product.tab.associations.info.show_products'),
-                            showGroupsLabel: __('pim_enrich.form.product.tab.associations.info.show_groups')
+                                'pim_enrich.entity.product.module.associations.number_of_associations',
+                            targetLabel: __('pim_enrich.entity.product.module.associations.target'),
+                            showProductsLabel: __('pim_enrich.entity.product.module.associations.show_products'),
+                            showGroupsLabel: __('pim_enrich.entity.product.module.associations.show_groups')
                         })
                     );
                 }.bind(this));
             },
+
+            /**
+             * Refresh the associations panel after model change
+             */
             postUpdate: function () {
                 if (this.isVisible()) {
                     this.$('.selection-inputs input').val('');
@@ -233,25 +269,46 @@ define(
                 return sessionStorage.getItem('current_association_target') || 'products';
             },
 
+            /**
+             * Fetch all the association types
+             *
+             * @returns {Promise}
+             */
             loadAssociationTypes: function () {
                 return FetcherRegistry.getFetcher('association-type').fetchAll();
             },
+
+            /**
+             * Compute associated items for a specified association type and put it in cache
+             *
+             * @param associationTypes
+             */
             setAssociationCount: function (associationTypes) {
-                var associations = this.getFormData().associations;
+                const associations = this.getFormData().associations;
 
                 _.each(associationTypes, function (assocType) {
-                    var association = associations[assocType.code];
+                    const association = associations[assocType.code];
 
                     assocType.productCount = association && association.products ? association.products.length : 0;
+
+                    assocType.productModelCount = association && association.product_models ?
+                        association.product_models.length : 0;
+
                     assocType.groupCount = association && association.groups ? association.groups.length : 0;
                 });
             },
+
+            /**
+             * Switch the current association type
+             *
+             * @param {Event} event
+             */
             changeAssociationType: function (event) {
                 event.preventDefault();
-                var associationType = event.currentTarget.dataset.associationtype;
+                const associationType = event.currentTarget.dataset.associationType;
                 this.setCurrentAssociationType(associationType);
 
-                this.$('.AknTitleContainer.association-type[data-association-type="' + associationType + '"]')
+                this.$(`.AknTitleContainer.association-type[data-association-type="${associationType}"]`)
                     .removeClass('AknTitleContainer--hidden')
                     .siblings('.AknTitleContainer.association-type:not(.AknTitleContainer--hidden)')
                     .addClass('AknTitleContainer--hidden');
@@ -259,7 +316,7 @@ define(
                 this.renderPanes();
                 this.updateListenerSelectors();
 
-                var currentGrid = this.datagrids[this.getCurrentAssociationTarget()];
+                const currentGrid = this.datagrids[this.getCurrentAssociationTarget()];
                 mediator
                     .trigger(
                         'datagrid:setParam:' + currentGrid.name,
@@ -268,12 +325,18 @@ define(
                     )
                     .trigger('datagrid:doRefresh:' + currentGrid.name);
             },
+
+            /**
+             * Switch the current target (product or group)
+             *
+             * @param {Event} event
+             */
             changeAssociationTargets: function (event) {
                 const associationTarget = event.currentTarget.dataset.associationTarget;
                 this.setCurrentAssociationTarget(associationTarget);
 
                 _.each(this.datagrids, function (datagrid, gridType) {
-                    var method = gridType === associationTarget ? 'removeClass' : 'addClass';
+                    const method = gridType === associationTarget ? 'removeClass' : 'addClass';
                     this.$('.' + datagrid.name)[method]('hide');
                 }.bind(this));
 
@@ -289,7 +352,7 @@ define(
 
                 this.updateListenerSelectors();
 
-                var currentGrid = this.datagrids[this.getCurrentAssociationTarget()];
+                const currentGrid = this.datagrids[this.getCurrentAssociationTarget()];
                 if (!this.isGridRendered(currentGrid)) {
                     this.renderGrid(
                         currentGrid.name,
@@ -298,21 +361,28 @@ define(
                     this.setListenerSelectors();
                 }
             },
+
+            /**
+             * Loads a complete grid from its grid name
+             *
+             * @param {string} gridName
+             * @param {Object} params
+             */
             renderGrid: function (gridName, params) {
-                var urlParams    = params;
+                let urlParams    = params;
                 urlParams.alias  = gridName;
                 urlParams.params = _.clone(params);
 
-                var datagridState = DatagridState.get(gridName, ['filters']);
+                const datagridState = DatagridState.get(gridName, ['filters']);
                 if (null !== datagridState.filters) {
-                    var collection = new PageableCollection();
-                    var filters    = collection.decodeStateData(datagridState.filters);
+                    const collection = new PageableCollection();
+                    const filters    = collection.decodeStateData(datagridState.filters);
 
                     collection.processFiltersParams(urlParams, filters, gridName + '[_filter]');
                 }
 
                 $.get(Routing.generate('pim_datagrid_load', urlParams)).then(function (response) {
-                    var metadata = response.metadata;
+                    let metadata = response.metadata;
                     /* Next lines are related to PIM-6113 and need some comments.
                      *
                      * When you just saved a datagrid from the Product Edit Form, you will have an URL like
@@ -329,29 +399,34 @@ define(
                      * To prevent this behavior, we removed the parameters passed in the URL before rendering the
                      * grid, to only allow datagrid state parameters.
                      */
-                    var queryParts = metadata.options.url.split('?');
-                    var url = queryParts[0];
-                    var queryString = decodeURIComponent(queryParts[1])
+                    const queryParts = metadata.options.url.split('?');
+                    const url = queryParts[0];
+                    const queryString = decodeURIComponent(queryParts[1])
                         .replace(/&?association-group-grid\[associatedIds\]\[\d+\]=\d+/g, '')
                         .replace(/^&/, '');
                     metadata.options.url = url + '?' + queryString;
 
                     this.$('#grid-' + gridName).data({ metadata: metadata, data: JSON.parse(response.data) });
 
-                    var gridModules = metadata.requireJSModules;
+                    let gridModules = metadata.requireJSModules;
                     gridModules.push('pim/datagrid/state-listener');
                     gridModules.push('oro/datafilter-builder');
                     gridModules.push('oro/datagrid/pagination-input');
 
-                    var resolvedModules = []
+                    let resolvedModules = [];
                     _.each(gridModules, function(module) {
                         resolvedModules.push(requireContext(module));
-                    })
+                    });
+
                     datagridBuilder(resolvedModules)
                 }.bind(this));
             },
+
+            /**
+             * Sets the listeners to trigger the checkboxes of each grid
+             */
             setListenerSelectors: function () {
-                var gridNames = _.pluck(this.datagrids, 'name');
+                let gridNames = _.pluck(this.datagrids, 'name');
 
                 mediator.on('column_form_listener:initialized', function onColumnListenerReady(gridName) {
                     gridNames = _.without(gridNames, gridName);
@@ -362,13 +437,17 @@ define(
                     }
                 }.bind(this));
             },
+
+            /**
+             * Updates the listeners to trigger the checkboxes of the current grid
+             */
             updateListenerSelectors: function () {
-                var associationType      = this.getCurrentAssociationType();
-                var selectedAssociations = state.selectedAssociations;
+                const associationType      = this.getCurrentAssociationType();
+                const selectedAssociations = state.selectedAssociations;
 
                 _.each(this.datagrids, function (datagrid, gridType) {
-                    var appendFieldId = ['#', associationType, '-', gridType, '-appendfield'].join('');
-                    var removeFieldId = ['#', associationType, '-', gridType, '-removefield'].join('');
+                    const appendFieldId = ['#', associationType, '-', gridType, '-appendfield'].join('');
+                    const removeFieldId = ['#', associationType, '-', gridType, '-removefield'].join('');
 
                     if (selectedAssociations &&
                         selectedAssociations[associationType] &&
@@ -384,10 +463,17 @@ define(
                     );
                 });
             },
+
+            /**
+             * Selects a line in the grid
+             *
+             * @param {Object} model    A grid model (i.e. a unique line)
+             * @param {Object} datagrid
+             */
             selectModel: function (model, datagrid) {
-                var assocType           = this.getCurrentAssociationType();
-                var assocTarget         = this.getDatagridTarget(datagrid);
-                var currentAssociations = this.getCurrentAssociations(datagrid);
+                const assocType           = this.getCurrentAssociationType();
+                const assocTarget         = this.getDatagridTarget(datagrid);
+                let currentAssociations = this.getCurrentAssociations(datagrid);
 
                 currentAssociations.push(datagrid.getModelIdentifier(model));
                 currentAssociations = _.uniq(currentAssociations);
@@ -395,23 +481,43 @@ define(
                 this.updateFormDataAssociations(currentAssociations, assocType, assocTarget);
                 this.updateSelectedAssociations('select', datagrid, model.id);
             },
-            unselectModel: function (model, datagrid) {
-                var assocType           = this.getCurrentAssociationType();
-                var assocTarget         = this.getDatagridTarget(datagrid);
-                var currentAssociations = _.uniq(this.getCurrentAssociations(datagrid));
 
-                var index = currentAssociations.indexOf(datagrid.getModelIdentifier(model));
-                if (-1 !== index) {
-                    currentAssociations.splice(index, 1);
+            /**
+             * Unselect a line in the grid
+             *
+             * @param {Object} model    A grid model (i.e. a unique line)
+             * @param {Object} datagrid
+             */
+            unselectModel: function (model, datagrid) {
+                const assocType = this.getCurrentAssociationType();
+                const assocTarget = this.getDatagridTarget(datagrid);
+
+                let assocSubTarget = assocTarget;
+                if (assocTarget === 'products') {
+                    // We check from what association target we have to remove model (products or product_models)
+                    assocSubTarget = (model.attributes.document_type === 'product') ? 'products' : 'product_models';
                 }
 
-                this.updateFormDataAssociations(currentAssociations, assocType, assocTarget);
+                const associationsField = this.getFormData().associations;
+                let associations = associationsField[assocType][assocSubTarget];
+                const index = associations.indexOf(datagrid.getModelIdentifier(model));
+                if (-1 !== index) {
+                    associations.splice(index, 1);
+                }
+
+                this.updateFormDataAssociations(associations, assocType, assocSubTarget);
                 this.updateSelectedAssociations('unselect', datagrid, model.id);
             },
+
+            /**
+             * Returns the current associations for a specified datagrid
+             *
+             * @param {Object} datagrid
+             */
             getCurrentAssociations: function (datagrid) {
-                var assocType = this.getCurrentAssociationType();
-                var assocTarget = this.getDatagridTarget(datagrid);
-                var associations = this.getFormData().associations;
+                const assocType = this.getCurrentAssociationType();
+                const assocTarget = this.getDatagridTarget(datagrid);
+                const associations = this.getFormData().associations;
 
                 return associations[assocType][assocTarget];
             },
@@ -424,16 +530,16 @@ define(
              * @param {string|int} id
              */
             updateSelectedAssociations: function (action, datagrid, id) {
-                var assocType     = this.getCurrentAssociationType();
-                var assocTarget   = this.getDatagridTarget(datagrid);
-                var selectedAssoc = state.selectedAssociations || {};
+                const assocType     = this.getCurrentAssociationType();
+                const assocTarget   = this.getDatagridTarget(datagrid);
+                let selectedAssoc = state.selectedAssociations || {};
                 selectedAssoc[assocType] = selectedAssoc[assocType] || {};
                 if (!selectedAssoc[assocType][assocTarget]) {
                     selectedAssoc[assocType][assocTarget] = {'select': [], 'unselect': []};
                 }
 
-                var revertAction = 'select' === action ? 'unselect' : 'select';
-                var index = selectedAssoc[assocType][assocTarget][revertAction].indexOf(id);
+                const revertAction = 'select' === action ? 'unselect' : 'select';
+                const index = selectedAssoc[assocType][assocTarget][revertAction].indexOf(id);
 
                 if (-1 < index) {
                     selectedAssoc[assocType][assocTarget][revertAction].splice(index, 1);
@@ -457,7 +563,7 @@ define(
              * @param {string} assocTarget
              */
             updateFormDataAssociations: function (currentAssociations, assocType, assocTarget) {
-                var modelAssociations = this.getFormData().associations;
+                let modelAssociations = this.getFormData().associations;
                 modelAssociations[assocType][assocTarget] = currentAssociations;
                 modelAssociations[assocType][assocTarget].sort();
 
@@ -485,7 +591,7 @@ define(
              * @returns {string}
              */
             getDatagridTarget: function (datagrid) {
-                var assocTarget = null;
+                let assocTarget = null;
 
                 _.each(this.datagrids, function (grid, gridType) {
                     if (grid.name === datagrid.name) {
@@ -503,6 +609,95 @@ define(
              */
             isVisible: function () {
                 return true;
+            },
+
+            isAddAssociationsVisible: function () {
+                return securityContext.isGranted(this.config.aclAddAssociations);
+            },
+
+            /**
+             * Opens the panel to select new products to associate
+             */
+            addAssociations: function () {
+                this.launchProductPicker().then((productAndProductModelIdentifiers) => {
+                    let productIds = [];
+                    let productModelIds = [];
+                    productAndProductModelIdentifiers.forEach((item) => {
+                        const matchProductModel = item.match(/^product_model_(.*)$/);
+                        if (matchProductModel) {
+                            productModelIds.push(matchProductModel[1]);
+                        } else {
+                            const matchProduct = item.match(/^product_(.*)$/);
+                            productIds.push(matchProduct[1]);
+                        }
+                    });
+
+                    const assocType = this.getCurrentAssociationType();
+                    const previousProductIds = this.getFormData().associations[assocType].products;
+                    const previousProductModelIds = this.getFormData().associations[assocType].product_models;
+
+                    this.updateFormDataAssociations(
+                        previousProductIds.concat(productIds),
+                        assocType,
+                        'products'
+                    );
+
+                    this.updateFormDataAssociations(
+                        previousProductModelIds.concat(productModelIds),
+                        assocType,
+                        'product_models'
+                    );
+
+                    this.getRoot().trigger('pim_enrich:form:update-association');
+                });
+            },
+
+            /**
+             * Launch the association product picker
+             *
+             * @return {Promise}
+             */
+            launchProductPicker: function () {
+                const deferred = $.Deferred();
+
+                FormBuilder.build('pim-associations-product-picker-form').then((form) => {
+                    FetcherRegistry
+                        .getFetcher('association-type')
+                        .fetch(this.getCurrentAssociationType())
+                        .then((associationType) => {
+                            form.setCustomTitle(__('pim_enrich.entity.product.module.associations.manage', {
+                                associationType: associationType.labels[UserContext.get('catalogLocale')]
+                            }));
+
+                            let modal = new Backbone.BootstrapModal({
+                                className: 'modal modal--fullPage modal--topButton',
+                                modalOptions: {
+                                    backdrop: 'static',
+                                    keyboard: false
+                                },
+                                allowCancel: true,
+                                okCloses: false,
+                                title: '',
+                                content: '',
+                                cancelText: ' ',
+                                okText: __('pim_common.confirm')
+                            });
+                            modal.open();
+                            modal.on('cancel', deferred.reject);
+                            modal.on('ok', () => {
+                                const products = form.getItems().sort((a, b) => {
+                                    return a.code < b.code;
+                                });
+                                modal.close();
+
+                                deferred.resolve(products);
+                            });
+
+                            form.setElement(modal.$('.modal-body')).render();
+                        });
+                });
+
+                return deferred.promise();
             }
         });
     }

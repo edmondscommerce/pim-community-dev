@@ -22,6 +22,7 @@ extensions:
         position: 110
         aclResourceId: pim_enrich_product_edit_attributes
         config:
+            innerForm: pim-mass-product-edit-form
             title: pim_enrich.mass_edit.product.title
             label: pim_enrich.mass_edit.product.operation.edit_common.label
             labelCount: pim_enrich.mass_edit.product.operation.edit_common.label_count
@@ -29,6 +30,23 @@ extensions:
             code: edit_common
             jobInstanceCode: edit_common_attributes
             icon: icon-edit
+            illustration: attributes
+
+    pim-mass-product-edit-configure-add-attribute-values:
+        module: pim/mass-edit-form/product/edit-common-attributes
+        parent: pim-mass-product-edit
+        position: 115
+        aclResourceId: pim_enrich_product_edit_attributes
+        config:
+            innerForm: pim-mass-product-add-form
+            title: pim_enrich.mass_edit.product.title
+            label: pim_enrich.mass_edit.product.operation.add_attribute_value.label
+            labelCount: pim_enrich.mass_edit.product.operation.add_attribute_value.label_count
+            description: pim_enrich.mass_edit.product.operation.add_attribute_value.description
+            code: add_attribute_value
+            jobInstanceCode: add_attribute_value
+            icon: icon-add-attribute-values
+            illustration: attributes
 
     pim-mass-product-edit-configure-change-family:
         module: pim/mass-edit-form/product/change-family
@@ -43,6 +61,7 @@ extensions:
             code: change_family
             jobInstanceCode: update_product_value
             icon: icon-template
+            illustration: families
 
     pim-mass-product-edit-configure-change-status:
         module: pim/mass-edit-form/product/change-status
@@ -69,8 +88,18 @@ extensions:
             labelCount: pim_enrich.mass_edit.product.operation.add_to_group.label_count
             description: pim_enrich.mass_edit.product.operation.add_to_group.description
             code: add_to_group
-            jobInstanceCode: add_product_value
+            jobInstanceCode: add_to_group
             icon: icon-groups
+            illustration: group
+
+    pim-mass-product-edit-configure-add-to-group-field:
+        module: pim/form/common/fields/multi-select-async
+        parent: pim-mass-product-edit-configure-add-to-group
+        targetZone: inputContainer
+        config:
+            fieldName: group
+            label: pim_enrich.mass_edit.product.operation.add_to_group.field
+            choiceRoute: pim_enrich_group_rest_search
 
     pim-mass-product-edit-configure-add-to-category:
         module: pim/mass-edit-form/product/category
@@ -83,10 +112,12 @@ extensions:
             labelCount: pim_enrich.mass_edit.product.operation.add_to_category.label_count
             description: pim_enrich.mass_edit.product.operation.add_to_category.description
             code: add_to_category
-            jobInstanceCode: add_product_value
+            jobInstanceCode: add_to_category
             listRoute: pim_enrich_product_listcategories
             childrenRoute: pim_enrich_categorytree_children
             icon: icon-folder_in
+            illustration: categories
+            fetcher: category
 
     pim-mass-product-edit-configure-move-to-category:
         module: pim/mass-edit-form/product/category
@@ -99,10 +130,12 @@ extensions:
             labelCount: pim_enrich.mass_edit.product.operation.move_to_category.label_count
             description: pim_enrich.mass_edit.product.operation.move_to_category.description
             code: move_to_category
-            jobInstanceCode: update_product_value
+            jobInstanceCode: move_to_category
             listRoute: pim_enrich_product_listcategorieslue
             childrenRoute: pim_enrich_categorytree_children
             icon: icon-folder_move
+            illustration: categories
+            fetcher: category
 
     pim-mass-product-edit-configure-remove-from-category:
         module: pim/mass-edit-form/product/category
@@ -115,7 +148,55 @@ extensions:
             labelCount: pim_enrich.mass_edit.product.operation.remove_from_category.label_count
             description: pim_enrich.mass_edit.product.operation.remove_from_category.description
             code: remove_from_category
-            jobInstanceCode: remove_product_value
+            jobInstanceCode: remove_from_category
             listRoute: pim_enrich_product_listcategorieslue
             childrenRoute: pim_enrich_categorytree_children
             icon: icon-folder_out
+            illustration: categories
+            fetcher: category
+
+    pim-mass-product-edit-configure-add-to-existing-product-model:
+        module: pim/mass-edit-form/product/update-entity-with-family-variant-parent
+        parent: pim-mass-product-edit
+        aclResourceId: pim_enrich_product_edit_attributes
+        position: 190
+        config:
+            title: pim_enrich.mass_edit.product.title
+            label: pim_enrich.mass_edit.product.operation.add_to_existing_product_model.label
+            labelCount: pim_enrich.mass_edit.product.operation.add_to_existing_product_model.label_count
+            description: pim_enrich.mass_edit.product.operation.add_to_existing_product_model.description
+            code: add_to_existing_product_model
+            jobInstanceCode: add_to_existing_product_model
+            icon: icon-model
+            illustration: product-models
+
+    pim-mass-product-edit-configure-change-parent-product-model:
+        module: pim/mass-edit-form/product/update-entity-with-family-variant-parent
+        parent: pim-mass-product-edit
+        aclResourceId: pim_enrich_product_edit_attributes
+        position: 200
+        config:
+            title: pim_enrich.mass_edit.product.title
+            label: pim_enrich.mass_edit.product.operation.change_parent_product_model.label
+            labelCount: pim_enrich.mass_edit.product.operation.change_parent_product_model.label_count
+            description: pim_enrich.mass_edit.product.operation.change_parent_product_model.description
+            code: change_parent_product
+            jobInstanceCode: change_parent_product
+            icon: icon-model
+            illustration: product-models
+
+    pim-mass-product-edit-configure-associate:
+        module: pim/mass-edit-form/product/associate
+        parent: pim-mass-product-edit
+        aclResourceId: pim_enrich_associations_edit
+        position: 210
+        config:
+            title: pim_enrich.mass_edit.product.title
+            label: pim_enrich.mass_edit.product.operation.associate_to_product_and_product_model.label
+            labelCount: pim_enrich.mass_edit.product.operation.associate_to_product_and_product_model.label_count
+            description: pim_enrich.mass_edit.product.operation.associate_to_product_and_product_model.description
+            code: associate_to_product_and_product_model
+            jobInstanceCode: add_association
+            icon: icon-association
+            illustration: association
+

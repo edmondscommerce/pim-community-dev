@@ -2,21 +2,22 @@
 
 namespace Pim\Bundle\EnrichBundle\Controller;
 
-use Akeneo\Component\Classification\Model\CategoryInterface;
-use Akeneo\Component\Classification\Repository\CategoryRepositoryInterface;
-use Akeneo\Component\StorageUtils\Factory\SimpleFactoryInterface;
-use Akeneo\Component\StorageUtils\Remover\RemoverInterface;
-use Akeneo\Component\StorageUtils\Saver\SaverInterface;
+use Akeneo\Tool\Component\Classification\Model\CategoryInterface;
+use Akeneo\Tool\Component\Classification\Repository\CategoryRepositoryInterface;
+use Akeneo\Tool\Component\StorageUtils\Factory\SimpleFactoryInterface;
+use Akeneo\Tool\Component\StorageUtils\Remover\RemoverInterface;
+use Akeneo\Tool\Component\StorageUtils\Saver\SaverInterface;
+use Akeneo\UserManagement\Bundle\Context\UserContext;
 use Doctrine\Common\Collections\ArrayCollection;
 use Oro\Bundle\SecurityBundle\SecurityFacade;
 use Pim\Bundle\EnrichBundle\Event\CategoryEvents;
 use Pim\Bundle\EnrichBundle\Flash\Message;
-use Pim\Bundle\UserBundle\Context\UserContext;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -138,6 +139,10 @@ class CategoryTreeController extends Controller
      */
     public function moveNodeAction(Request $request)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         if (false === $this->securityFacade->isGranted($this->buildAclName('category_edit'))) {
             throw new AccessDeniedException();
         }
@@ -356,15 +361,17 @@ class CategoryTreeController extends Controller
      *
      * @return Response
      */
-    public function removeAction($id)
+    public function removeAction(Request $request, $id)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         if (false === $this->securityFacade->isGranted($this->buildAclName('category_remove'))) {
             throw new AccessDeniedException();
         }
 
         $category = $this->findCategory($id);
-        $parent = $category->getParent();
-        $params = (null !== $parent) ? ['node' => $parent->getId()] : [];
 
         $this->categoryRemover->remove($category);
 

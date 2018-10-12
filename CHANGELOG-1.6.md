@@ -1,3 +1,34 @@
+# 1.6.23 (2018-04-03)
+
+- GITHUB-7760: Fix wrong HTTP status in AttributeOptionController::deleteAction, cheers @amansilla!
+
+# 1.6.22 (2018-02-26)
+
+## Bug fixes
+
+- PIM-7132: Fix "url too long" when doing a mass edit
+- PIM-7169: Fix a memory leak on product export when having many variant groups
+- PIM-7170: Fix media files unnecessarily generated during quick export
+- PIM-7182: Fix the clean mongodb command for reference data
+- PIM-7151: Fix the family filter display on import/export profile
+
+## Security fixes
+
+- PIM-7116: Fix multiple CRSF vulnerabilities on several endpoints by allowing only XHR calls (see https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet#Protecting_REST_Services:_Use_of_Custom_Request_Headers)
+
+# 1.6.21 (2018-01-11)
+
+## Bug fixes
+
+- PIM-7041: Fix a bug that prevents to sort on a reference data attribute on product grid
+- PIM-7058: Restore correct simple select filter label when loading views
+
+# 1.6.20 (2017-10-25)
+
+## Bug fixes
+
+- GITHUB-6984: Fix wrong path when generating js routes, cheers @amansilla!
+
 # 1.6.19 (2017-09-05)
 
 # 1.6.18 (2017-07-17)

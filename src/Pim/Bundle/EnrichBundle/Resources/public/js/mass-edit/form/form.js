@@ -33,7 +33,9 @@ define(
             template: _.template(template),
             currentStep: 'choose',
             events: {
-                'click .wizard-action': 'applyAction'
+                'click .wizard-action': function (event) {
+                    this.applyAction(event.target.dataset.actionTarget);
+                }
             },
 
             /**
@@ -43,6 +45,19 @@ define(
                 this.config = _.extend({}, meta.config);
 
                 BaseForm.prototype.initialize.apply(this, arguments);
+            },
+
+            /**
+             * {@inheritdoc}
+             */
+            configure: function () {
+                this.listenTo(
+                    this.getRoot(),
+                    'mass-edit:navigate:action',
+                    this.applyAction.bind(this)
+                );
+
+                return BaseForm.prototype.configure.apply(this, arguments);
             },
 
             /**
@@ -76,13 +91,17 @@ define(
                     title: step.getTitle(),
                     labelCount: step.getLabelCount(),
                     confirm: __(this.config.confirm, {itemsCount}, itemsCount),
-                    previousLabel: __('pim_enrich.mass_edit.previous'),
-                    nextLabel: __('pim_enrich.mass_edit.next'),
-                    confirmLabel: __('pim_enrich.mass_edit.confirm'),
+                    previousLabel: __('pim_common.previous'),
+                    nextLabel: __('pim_common.next'),
+                    confirmLabel: __('pim_common.confirm'),
+                    illustrationClass: step.getIllustrationClass(),
                     __: __
                 }));
 
-                this.$('.step').empty().append(step.render().$el);
+                this.$('.step').empty().append(step.$el);
+                // We need to have the step in the DOM as soon as possible for extensions that call render() and
+                // postRender()
+                step.render();
 
                 this.delegateEvents();
             },
@@ -157,10 +176,10 @@ define(
             /**
              * Apply the action triggered by a dom event
              *
-             * @param {Event} event
+             * @param {String} action
              */
-            applyAction: function (event) {
-                switch (event.target.dataset.actionTarget) {
+            applyAction: function (action) {
+                switch (action) {
                     case 'grid':
                         router.redirectToRoute(this.config.backRoute);
                         break;

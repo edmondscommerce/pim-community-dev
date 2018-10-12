@@ -2,6 +2,9 @@
 
 namespace Pim\Bundle\EnrichBundle\tests\Unit\Form\Subscriber;
 
+use Akeneo\Pim\Enrichment\Component\Product\Model\ValueInterface;
+use Akeneo\Pim\Structure\Component\Model\AttributeInterface;
+use PHPUnit\Framework\TestCase;
 use Pim\Bundle\EnrichBundle\Form\Subscriber\FilterLocaleValueSubscriber;
 
 /**
@@ -11,7 +14,7 @@ use Pim\Bundle\EnrichBundle\Form\Subscriber\FilterLocaleValueSubscriber;
  * @copyright 2013 Akeneo SAS (http://www.akeneo.com)
  * @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-class FilterLocaleValueSubscriberTest extends \PHPUnit_Framework_TestCase
+class FilterLocaleValueSubscriberTest extends TestCase
 {
     const CURRENT_LOCALE = 'fr_FR';
     const COMPARISON_LOCALE = 'fr_BE';
@@ -147,11 +150,11 @@ class FilterLocaleValueSubscriberTest extends \PHPUnit_Framework_TestCase
      * @param mixed $attribute
      * @param mixed $locale
      *
-     * @return \Pim\Component\Catalog\Model\ProductValue
+     * @return ValueInterface
      */
     private function getProductValueMock($attribute, $locale)
     {
-        $value = $this->createMock('Pim\Component\Catalog\Model\ProductValue');
+        $value = $this->createMock(ValueInterface::class);
 
         $value->expects($this->any())
             ->method('getAttribute')
@@ -167,11 +170,11 @@ class FilterLocaleValueSubscriberTest extends \PHPUnit_Framework_TestCase
     /**
      * @param bool $localizable
      *
-     * @return \Pim\Component\Catalog\Model\AttributeInterface
+     * @return AttributeInterface
      */
     private function getAttributeMock($localizable = true)
     {
-        $attribute = $this->createMock('Pim\Bundle\CatalogBundle\Entity\Attribute');
+        $attribute = $this->createMock(AttributeInterface::class);
 
         $attribute->expects($this->any())
             ->method('isLocalizable')

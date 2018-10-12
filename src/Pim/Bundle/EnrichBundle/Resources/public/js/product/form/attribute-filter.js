@@ -1,4 +1,4 @@
- 'use strict';
+'use strict';
 /**
  * @author    Yohan Blain <yohan.blain@akeneo.com>
  * @copyright 2017 Akeneo SAS (http://www.akeneo.com)
@@ -21,10 +21,9 @@ define(
         return BaseForm.extend({
             className: 'AknDropdown AknButtonList-item nav nav-tabs attribute-filter',
             template: _.template(template),
-            currentFilterCode: null,
 
             events: {
-                'click li': 'onChange'
+                'click .AknDropdown-menuLink': 'onChange'
             },
 
             /**
@@ -43,9 +42,9 @@ define(
                 const currentFilter = this.getCurrentFilter();
 
                 this.$el.html(this.template({
-                    filters: this.getFilters().map((filter) => {
-                        return { code: filter.getCode(), label: filter.getLabel() }
-                    }),
+                    filters: this.getFilters()
+                        .filter(filter => 'function' !== typeof(filter.isVisible) || filter.isVisible())
+                        .map((filter) => ({ code: filter.getCode(), label: filter.getLabel()})),
                     currentFilter: { code: currentFilter.getCode(), label: currentFilter.getLabel() },
                     __: __
                 }));
@@ -79,11 +78,14 @@ define(
              * @returns {Object}
              */
             getCurrentFilter() {
-                if (null === this.currentFilterCode) {
+                const currentFilterCode = sessionStorage.getItem('current_attribute_filter');
+                const filter = this.getFilters().find((filter) => currentFilterCode === filter.getCode());
+
+                if (undefined === filter || !filter.isVisible()) {
                     return this.getFilters()[0];
                 }
 
-                return this.getFilters().find((filter) => this.currentFilterCode === filter.getCode());
+                return filter;
             },
 
             /**
@@ -101,12 +103,13 @@ define(
              * @param {string} filterCode
              */
             setCurrent(filterCode) {
-                if (filterCode === this.currentFilterCode) {
+                if (filterCode === sessionStorage.getItem('current_attribute_filter')) {
                     return;
                 }
 
-                this.currentFilterCode = filterCode;
+                sessionStorage.setItem('current_attribute_filter', filterCode);
                 this.trigger('attribute_filter:change');
+                this.$el.removeClass('open');
             }
         });
     }

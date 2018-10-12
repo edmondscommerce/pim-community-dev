@@ -2,26 +2,28 @@
 
 namespace Pim\Bundle\EnrichBundle\Controller\Rest;
 
-use Akeneo\Bundle\BatchBundle\Job\JobInstanceFactory;
-use Akeneo\Bundle\BatchBundle\Launcher\JobLauncherInterface;
-use Akeneo\Component\Batch\Job\JobParametersFactory;
-use Akeneo\Component\Batch\Job\JobParametersValidator;
-use Akeneo\Component\Batch\Job\JobRegistry;
-use Akeneo\Component\Batch\Model\JobExecution;
-use Akeneo\Component\Batch\Model\JobInstance;
-use Akeneo\Component\StorageUtils\Remover\RemoverInterface;
-use Akeneo\Component\StorageUtils\Repository\IdentifiableObjectRepositoryInterface;
-use Akeneo\Component\StorageUtils\Saver\SaverInterface;
-use Akeneo\Component\StorageUtils\Updater\ObjectUpdaterInterface;
+use Akeneo\Pim\Enrichment\Bundle\Filter\CollectionFilterInterface;
+use Akeneo\Pim\Enrichment\Bundle\Filter\ObjectFilterInterface;
+use Akeneo\Tool\Bundle\BatchBundle\Job\JobInstanceFactory;
+use Akeneo\Tool\Bundle\BatchBundle\Launcher\JobLauncherInterface;
+use Akeneo\Tool\Component\Batch\Job\JobParametersFactory;
+use Akeneo\Tool\Component\Batch\Job\JobParametersValidator;
+use Akeneo\Tool\Component\Batch\Job\JobRegistry;
+use Akeneo\Tool\Component\Batch\Model\JobExecution;
+use Akeneo\Tool\Component\Batch\Model\JobInstance;
+use Akeneo\Tool\Component\StorageUtils\Remover\RemoverInterface;
+use Akeneo\Tool\Component\StorageUtils\Repository\IdentifiableObjectRepositoryInterface;
+use Akeneo\Tool\Component\StorageUtils\Saver\SaverInterface;
+use Akeneo\Tool\Component\StorageUtils\Updater\ObjectUpdaterInterface;
 use Oro\Bundle\SecurityBundle\Annotation\AclAncestor;
-use Pim\Bundle\CatalogBundle\Filter\CollectionFilterInterface;
-use Pim\Bundle\CatalogBundle\Filter\ObjectFilterInterface;
 use Pim\Bundle\EnrichBundle\Event\JobInstanceEvents;
 use Pim\Bundle\EnrichBundle\Provider\Form\FormProviderInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\PropertyAccess\PropertyAccess;
@@ -196,10 +198,14 @@ class JobInstanceController
      *
      * @AclAncestor("pim_importexport_import_profile_edit")
      *
-     * @return JsonResponse
+     * @return Response
      */
     public function putImportAction(Request $request, $identifier)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         return $this->putAction($request, $identifier);
     }
 
@@ -211,10 +217,14 @@ class JobInstanceController
      *
      * @AclAncestor("pim_importexport_export_profile_edit")
      *
-     * @return JsonResponse
+     * @return Response
      */
     public function putExportAction(Request $request, $identifier)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         return $this->putAction($request, $identifier);
     }
 
@@ -225,10 +235,14 @@ class JobInstanceController
      *
      * @AclAncestor("pim_importexport_import_profile_remove")
      *
-     * @return JsonResponse
+     * @return Response
      */
-    public function deleteImportAction($code)
+    public function deleteImportAction(Request $request, $code)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         return $this->deleteAction($code);
     }
 
@@ -239,10 +253,14 @@ class JobInstanceController
      *
      * @AclAncestor("pim_importexport_export_profile_remove")
      *
-     * @return JsonResponse
+     * @return Response
      */
-    public function deleteExportAction($code)
+    public function deleteExportAction(Request $request, $code)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         return $this->deleteAction($code);
     }
 
@@ -254,10 +272,14 @@ class JobInstanceController
      *
      * @AclAncestor("pim_importexport_import_profile_launch")
      *
-     * @return JsonResponse
+     * @return Response
      */
     public function launchImportAction(Request $request, $code)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         return $this->launchAction($request, $code);
     }
 
@@ -269,10 +291,14 @@ class JobInstanceController
      *
      * @AclAncestor("pim_importexport_export_profile_launch")
      *
-     * @return JsonResponse
+     * @return Response
      */
     public function launchExportAction(Request $request, $code)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         return $this->launchAction($request, $code);
     }
 
@@ -299,10 +325,14 @@ class JobInstanceController
      * @param Request $request
      * @param string  $identifier
      *
-     * @return JsonResponse
+     * @return Response
      */
     protected function putAction(Request $request, $identifier)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         $jobInstance = $this->getJobInstance($identifier);
         if ($this->objectFilter->filterObject($jobInstance, 'pim.internal_api.job_instance.edit')) {
             throw new AccessDeniedHttpException();
@@ -336,9 +366,9 @@ class JobInstanceController
      *
      * @param string $code
      *
-     * @return JsonResponse
+     * @return Response
      */
-    protected function deleteAction($code)
+    protected function deleteAction($code): Response
     {
         $jobInstance = $this->getJobInstance($code);
         if ($this->objectFilter->filterObject($jobInstance, 'pim.internal_api.job_instance.delete')) {
@@ -358,10 +388,14 @@ class JobInstanceController
      *
      * @throws AccessDeniedHttpException
      *
-     * @return JsonResponse
+     * @return Response
      */
-    protected function launchAction(Request $request, string $code) : JsonResponse
+    protected function launchAction(Request $request, string $code): Response
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         $jobInstance = $this->getJobInstance($code);
         if ($this->objectFilter->filterObject($jobInstance, 'pim.internal_api.job_instance.execute')) {
             throw new AccessDeniedHttpException();
@@ -418,7 +452,7 @@ class JobInstanceController
     {
         $jobInstance = $this->repository->findOneByIdentifier($code);
         if (null === $jobInstance) {
-            throw new NotFoundHttpException(sprintf('%s entity not found', 'Akeneo\Component\Batch\Model\JobInstance'));
+            throw new NotFoundHttpException(sprintf('%s entity not found', JobInstance::class));
         }
 
         $job = $this->jobRegistry->get($jobInstance->getJobName());
@@ -444,7 +478,11 @@ class JobInstanceController
     /**
      * Get an array of job names
      *
+     * @param Request $request
+     *
      * @throws NotFoundHttpException
+     *
+     * @return JsonResponse
      */
     public function getJobNamesAction(Request $request)
     {
@@ -562,10 +600,14 @@ class JobInstanceController
      * @param Request $request
      * @param string  $type
      *
-     * @return JsonResponse
+     * @return Response
      */
     protected function createAction(Request $request, string $type)
     {
+        if (!$request->isXmlHttpRequest()) {
+            return new RedirectResponse('/');
+        }
+
         $data = json_decode($request->getContent(), true);
         $jobInstance = $this->jobInstanceFactory->createJobInstance($type);
         $this->updater->update($jobInstance, $data);

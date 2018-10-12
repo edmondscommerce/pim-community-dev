@@ -4,6 +4,33 @@ extensions:
         config:
             template: pim/template/common/drop-zone
 
+    pim-attribute-select-form-properties-common-usable-as-grid-filter:
+        module: pim/form/common/fields/boolean
+        parent: pim-attribute-form-select
+        targetZone: content
+        position: 70
+        config:
+            fieldName: useable_as_grid_filter
+            label: pim_enrich.entity.attribute.property.useable_as_grid_filter
+
+    pim-attribute-edit-form-select-is-locale-specific:
+        module: pim/attribute-edit-form/properties/is-locale-specific
+        parent: pim-attribute-form-select
+        targetZone: content
+        position: 80
+        config:
+            fieldName: is_locale_specific
+            label: pim_enrich.entity.attribute.property.is_locale_specific
+
+    pim-attribute-edit-form-select-available-locales:
+        module: pim/attribute-edit-form/properties/available-locales
+        parent: pim-attribute-form-select
+        targetZone: content
+        position: 90
+        config:
+            fieldName: available_locales
+            label: pim_enrich.entity.attribute.property.available_locales
+
     pim-attribute-form-select-type-specific-params:
         module: pim/common/simple-view
         parent: pim-attribute-form-select
@@ -12,7 +39,7 @@ extensions:
         config:
             template: pim/template/form/tab/section
             templateParams:
-                sectionTitle: pim_enrich.form.attribute.tab.properties.section.type_specific
+                sectionTitle: pim_enrich.entity.attribute.module.edit.type_specific
                 dropZone: content
 
     pim-attribute-form-select-type-specific-params-minimum-input-length:
@@ -22,4 +49,4 @@ extensions:
         position: 100
         config:
             fieldName: minimum_input_length
-            label: pim_enrich.form.attribute.tab.properties.label.minimum_input_length
+            label: pim_enrich.entity.attribute.property.minimum_input_length

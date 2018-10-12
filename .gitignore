@@ -3,6 +3,7 @@ web/media/*
 web/css/*
 web/js/*
 web/dist/*
+web/test_dist/*
 web/cache/
 web/uploads/*
 web/uploads_test/*
@@ -33,13 +34,13 @@ composer.phar
 !/bin/docker/pim-dependencies.sh
 !/bin/docker/pim-front.sh
 !/bin/docker/pim-initialize.sh
-!/bin/merge-coverage
 !/bin/console
+!/bin/check-pullup
+!/bin/pim-front.sh
 behat.yml
 /phpspec.yml
 uploads_test/
 .phpspec/*.tpl
-composer.lock
 .php_cs.cache
 /node_modules
 npm-debug.log
@@ -47,10 +48,12 @@ npm-debug.log
 !/docker/akeneo.conf
 !/docker/akeneo-behat.conf
 !/docker/httpd.conf
-docker-compose.yml
+.env
+docker-compose.override.yml
 .web-server-pid
 
 yarn.lock
 package-lock.json
 .yarn-metadata.json
 yarn-error.log
+coverage/*

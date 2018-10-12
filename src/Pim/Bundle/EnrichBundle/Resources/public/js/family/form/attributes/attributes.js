@@ -39,8 +39,9 @@ define([
             className: 'tabsection-content tab-content',
             attributeRequiredIconClass: 'AknAcl-icon AknAcl-icon--granted icon-ok required',
             attributeNotRequiredIconClass: 'AknAcl-icon icon-circle non-required',
-            requiredLabel: __('pim_enrich.form.family.tab.attributes.required_label'),
-            notRequiredLabel: __('pim_enrich.form.family.tab.attributes.not_required_label'),
+            collapsedClass: 'AknGrid-bodyContainer--collapsed',
+            requiredLabel: __('pim_enrich.entity.family.module.attributes.required_label'),
+            notRequiredLabel: __('pim_enrich.entity.family.module.attributes.not_required_label'),
             identifierAttributeType: 'pim_catalog_identifier',
             template: _.template(template),
             errors: [],
@@ -120,7 +121,7 @@ define([
 
                     _.each(groupedAttributes, function (attributes, group) {
                         attributes = _.sortBy(attributes, function (attribute) {
-                            return attribute.sort_order;
+                            return [attribute.sort_order, attribute.code].join('_');
                         });
 
                         groupedAttributes[group] = attributes;
@@ -133,7 +134,12 @@ define([
                         groupedAttributes: groupedAttributes,
                         attributeRequirements: data.attribute_requirements,
                         channels: this.channels,
-                        attributeGroups: attributeGroups,
+                        attributeGroups: _.map(attributeGroups, function (group) {
+                            var panel = $('tbody[data-group="' + group.code + '"]');
+                            group.collapsed = $(panel).hasClass(this.collapsedClass);
+
+                            return group;
+                        }.bind(this)),
                         colspan: (this.channels.length + 2),
                         i18n: i18n,
                         identifierAttributeType: this.identifierAttributeType,
@@ -155,9 +161,8 @@ define([
              */
             toggleGroup: function (event) {
                 var target = event.currentTarget;
-
-                $(target).parent().find('tr:not(.group)').toggle();
                 $(target).find('i').toggleClass('icon-expand-alt icon-collapse-alt');
+                $(target).parent().toggleClass(this.collapsedClass);
 
                 return this;
             },
@@ -260,7 +265,7 @@ define([
                 if (attributeAsLabel === attributeToRemove) {
                     Messenger.notify(
                         'error',
-                        __('pim_enrich.entity.family.info.cant_remove_attribute_as_label')
+                        __('pim_enrich.entity.family.flash.update.can_remove_attribute_as_label')
                     );
 
                     return false;
@@ -268,14 +273,14 @@ define([
                 } else if (attributeAsImage === attributeToRemove) {
                     Messenger.notify(
                         'error',
-                        __('pim_enrich.entity.family.info.cant_remove_attribute_as_image')
+                        __('pim_enrich.entity.family.flash.update.cant_remove_attribute_as_image')
                     );
 
                     return false;
                 } else if (_.contains(attributesUsedAsAxis, attributeToRemove)) {
                     Messenger.notify(
                         'error',
-                        __('pim_enrich.entity.family.info.cant_remove_attribute_used_as_axis')
+                        __('pim_enrich.entity.family.flash.update.cant_remove_attribute_used_as_axis')
                     );
 
                     return false;

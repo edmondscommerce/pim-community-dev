@@ -28,7 +28,7 @@ define(
             template: _.template(template),
             className: 'AknDropdown AknButtonList-item locale-switcher',
             events: {
-                'click li a': 'changeLocale'
+                'click li span[data-locale]': 'changeLocale'
             },
             displayInline: false,
             displayLabel: true,
@@ -68,14 +68,19 @@ define(
                         };
                         this.getRoot().trigger('pim_enrich:form:locale_switcher:pre_render', params);
 
+                        let currentLocale = locales.find(locale => locale.code === params.localeCode);
+                        if (undefined === currentLocale) {
+                            currentLocale = _.first(locales);
+                        }
+
                         this.$el.html(
                             this.template({
                                 locales: locales,
-                                currentLocale: _.findWhere(locales, {code: params.localeCode}),
+                                currentLocale,
                                 i18n: i18n,
                                 displayInline: this.displayInline,
                                 displayLabel: this.displayLabel,
-                                label: __('pim_enrich.entity.product.meta.locale')
+                                label: __('pim_enrich.entity.locale.uppercase_label')
                             })
                         );
                         this.delegateEvents();

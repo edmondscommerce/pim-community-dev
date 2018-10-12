@@ -11,6 +11,7 @@ define(
     [
         'jquery',
         'underscore',
+        'oro/translator',
         'backbone',
         'oro/mediator',
         'pim/form',
@@ -25,6 +26,7 @@ define(
     function (
         $,
         _,
+        __,
         Backbone,
         mediator,
         BaseForm,
@@ -79,10 +81,9 @@ define(
                 this.trigger('save-buttons:register-button', {
                     className: 'save-and-continue',
                     priority: 250,
-                    label: _.__(
-                        'pim_enrich.form.product.sequential_edit.btn.save_and_' +
-                            (undefined !== nextObject ? 'next' : 'finish')
-                    ),
+                    label: undefined !== nextObject ?
+                        __('pim_enrich.entity.product.module.sequential_edit.save_and_next') :
+                        __('pim_enrich.entity.product.module.sequential_edit.save_and_finish'),
                     events: {
                         'click .save-and-continue': this.saveAndContinue.bind(this)
                     }
@@ -120,14 +121,14 @@ define(
 
                 var promises = [];
                 if (previous) {
-                    promises.push(FetcherRegistry.getFetcher(previous.type).fetch(previous.id).then(function (product) {
-                        previousObject = getObjectViewParams(product);
-                    }));
+                    promises.push(this.getEntity(previous.type, previous.id).then(function (product) {
+                            previousObject = getObjectViewParams(product);
+                        }));
                 }
                 if (next) {
-                    promises.push(FetcherRegistry.getFetcher(next.type).fetch(next.id).then(function (product) {
-                        nextObject = getObjectViewParams(product);
-                    }));
+                    promises.push(this.getEntity(next.type, next.id).then(function (product) {
+                            nextObject = getObjectViewParams(product);
+                        }));
                 }
 
                 return $.when.apply($, promises).then(function () {
@@ -149,8 +150,8 @@ define(
                 );
                 var pending = objectSet[currentIndex + 2];
                 if (pending) {
-                    setTimeout(function () {
-                        FetcherRegistry.getFetcher('product').fetch(pending);
+                    setTimeout(() => {
+                        this.getEntity(pending.type, pending.id)
                     }, 2000);
                 }
             },
@@ -185,6 +186,9 @@ define(
             },
             finish: function () {
                 router.redirectToRoute('pim_enrich_product_index');
+            },
+            getEntity(type, id) {
+                return FetcherRegistry.getFetcher(type.replace('_', '-')).fetch(id);
             }
         });
     }

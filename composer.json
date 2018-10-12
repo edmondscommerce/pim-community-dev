@@ -10,24 +10,29 @@
     ],
     "autoload": {
         "psr-0": {
-            "": "src/",
-            "Context": "features/",
-            "Pim\\Behat": "features/"
+            "": "src/"
         },
         "psr-4": {
-            "Pim\\Upgrade\\": "upgrades/",
-            "Akeneo\\Test\\IntegrationTestsBundle\\": "tests/IntegrationTestsBundle/",
-            "Akeneo\\Test\\Integration\\": "tests/"
+            "Pim\\Upgrade\\": "upgrades/"
         },
-        "classmap": [ "app/AppKernel.php", "app/AppCache.php", "tests/AppKernelTest.php" ]
+        "classmap": [ "app/AppKernel.php", "app/AppCache.php" ]
     },
     "autoload-dev": {
-        "files": [
-            "vendor/phpunit/phpunit/src/Framework/Assert/Functions.php"
-        ]
+        "psr-0": {
+            "Context": "tests/legacy/features/"
+        },
+        "psr-4": {
+            "Pim\\Behat\\": "tests/legacy/features/Behat",
+            "AkeneoTest\\": "tests/back",
+            "Akeneo\\Test\\IntegrationTestsBundle\\": "tests/back/Integration/IntegrationTestsBundle/",
+            "Akeneo\\Test\\Integration\\": "tests/back/Integration/",
+            "Akeneo\\Test\\Acceptance\\": "tests/back/Acceptance/",
+            "Akeneo\\Test\\Common\\": "tests/back/Common/"
+        },
+        "classmap": [ "tests/back/Integration/AppKernelTest.php" ]
     },
     "require": {
-        "php": ">=7.1.0",
+        "php": ">=7.2.0",
         "ass/xmlsecurity": "1.1.1",
         "doctrine/annotations": "1.3.1",
         "doctrine/cache": "1.6.1",
@@ -38,7 +43,7 @@
         "doctrine/doctrine-migrations-bundle": "1.2.1",
         "doctrine/migrations": "1.5.0",
         "doctrine/orm": "2.5.6",
-        "dompdf/dompdf" : "0.6.1",
+        "dompdf/dompdf" : "0.6.2@dev",
         "elasticsearch/elasticsearch": "^5.1",
         "escapestudios/wsse-authentication-bundle": "2.2.2",
         "friendsofsymfony/jsrouting-bundle": "1.6.0",
@@ -64,34 +69,38 @@
         "sensio/framework-extra-bundle": "3.0.26",
         "sensio/generator-bundle": "3.1.6",
         "symfony/assetic-bundle": "2.8.2",
-        "symfony/monolog-bundle": "3.1.0",
+        "symfony/monolog-bundle": "3.1.2",
         "symfony/swiftmailer-bundle": "3.0.3",
         "symfony/security-acl": "3.0.0",
-        "symfony/symfony": "3.3.6",
+        "symfony/symfony": "3.4.4",
+        "symfony/thanks": "^1.0",
         "symfony/polyfill-apcu": "1.4.0",
         "twig/extensions": "1.2.0",
         "box/spout": "2.7.2"
     },
     "require-dev": {
         "akeneo/phpspec-skip-example-extension": "2.0.*",
-        "akeneo/php-coupling-detector": "0.2.0",
-        "behat/behat": "3.1.0",
-        "behat/gherkin":"4.4.5",
+        "akeneo/php-coupling-detector": "0.3.*",
+        "behat/behat": "3.4.3",
+        "behat/gherkin":"4.5.1",
         "behat/mink":"1.7.1",
-        "behat/mink-browserkit-driver": "1.3.2",
-        "behat/mink-extension": "2.2.0",
-        "behat/mink-selenium2-driver": "1.3.1",
-        "behat/symfony2-extension": "2.1.1",
-        "behat/transliterator":"1.1.0",
+        "behat/transliterator":"1.2.0",
+        "behat/mink-browserkit-driver": "1.3.3",
+        "behat/mink-extension": "2.3.1",
+        "behat/mink-selenium2-driver": "1.3.x-dev",
+        "behat/symfony2-extension": "2.1.4",
         "kriswallsmith/buzz": "^0.15",
         "pdepend/pdepend": "2.1.*",
         "phpmd/phpmd": "1.*",
         "phpspec/phpspec": "~3.4.2",
-        "phpunit/phpunit": "~5.7.22",
-        "sebastian/exporter": "~2.0.0",
+        "phpunit/phpunit": "6.5.3",
+        "sebastian/exporter": "~3.1.0",
         "sensiolabs/behat-page-object-extension": "2.1.0",
         "squizlabs/php_codesniffer": "2.*",
-        "liuggio/fastest": "1.4.4"
+        "friends-of-behat/context-service-extension": "^1.1",
+        "friends-of-behat/cross-container-extension": "^1.0",
+        "friends-of-behat/symfony-extension": "^1.0",
+        "liuggio/fastest": "1.6.*"
     },
     "suggest": {
         "akeneo/catalogs": "In order to install one of the Akeneo catalogs"
@@ -117,11 +126,11 @@
             "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::buildBootstrap",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::clearCache",
-            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::installAssets",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::installRequirementsFile",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::removeSymfonyStandardFiles",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::prepareDeploymentTarget",
-            "php bin/console fos:js-routing:dump --target=web/js/routes.js"
+            "php bin/console --ansi fos:js-routing:dump --target=web/js/routes.js",
+            "php bin/console --ansi pim:installer:assets"
         ],
         "post-install-cmd": [
             "@symfony-scripts"
@@ -145,11 +154,15 @@
                 "database_port": "PIM_DATABASE_PORT",
                 "database_name": "PIM_DATABASE_NAME",
                 "database_user": "PIM_DATABASE_USER",
-                "database_password": "PIM_DATABASE_PASSWORD"
+                "database_password": "PIM_DATABASE_PASSWORD",
+                "index_hosts": "PIM_INDEX_HOSTS"
             }
         },
         "branch-alias": {
-            "dev-master": "2.1.x-dev",
+            "dev-master": "3.0.x-dev",
+            "dev-2.3": "2.3.x-dev",
+            "dev-2.2": "2.2.x-dev",
+            "dev-2.1": "2.1.x-dev",
             "dev-2.0": "2.0.x-dev",
             "dev-1.7": "1.7.x-dev",
             "dev-1.6": "1.6.x-dev",
